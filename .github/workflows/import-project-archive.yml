@@ -1,0 +1,48 @@
+name: Import prepared project archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "showbizz-cars-hostinger-ready.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack-and-commit:
+    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.message != 'Import prepared website source from archive'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Extract website source into repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f showbizz-cars-hostinger-ready.zip
+          mkdir -p /tmp/showbizz-source
+          unzip -q showbizz-cars-hostinger-ready.zip -d /tmp/showbizz-source
+          test -f /tmp/showbizz-source/package.json
+          test -f /tmp/showbizz-source/README.md
+          cp -a /tmp/showbizz-source/. .
+          rm -f .github/workflows/ci.yml
+          rm -f showbizz-cars-hostinger-ready.zip
+
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "Import prepared website source from archive"
+          git push
