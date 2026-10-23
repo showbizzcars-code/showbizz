@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 220" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Showbizz Cars</title>
+  <defs>
+    <linearGradient id="silver" x1="0" y1="0" x2="0.1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.48" stop-color="#b8bcc1"/>
+      <stop offset="0.58" stop-color="#f7f8fa"/>
+      <stop offset="1" stop-color="#9da2a8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/>
+      <feOffset dy="3"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.8"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g fill="url(#silver)" stroke="#121416" stroke-width="1.5" paint-order="stroke" filter="url(#shadow)" font-family="Arial Black, Impact, sans-serif" font-weight="900" text-anchor="middle">
+    <text x="240" y="91" font-size="60" letter-spacing="-2.5">SHOWBIZZ</text>
+    <text x="240" y="187" font-size="111" letter-spacing="-4">CARS</text>
+  </g>
+  <g transform="translate(180 59)" fill="none" stroke="#121416" stroke-width="5">
+    <circle r="23" fill="#e8eaec" stroke="#121416" stroke-width="5"/>
+    <circle r="11" fill="#15191c" stroke="#454a50" stroke-width="3"/>
+  </g>
+</svg>

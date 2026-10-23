@@ -27,15 +27,12 @@ jobs:
           test -f showbizz-cars-hostinger-ready.zip
           mkdir -p /tmp/showbizz-source
           unzip -q showbizz-cars-hostinger-ready.zip -d /tmp/showbizz-source
-          source_dir=/tmp/showbizz-source
-          if [ ! -f "$source_dir/package.json" ]; then
-            package_file="$(find /tmp/showbizz-source -mindepth 2 -maxdepth 3 -type f -name package.json -print -quit)"
-            test -n "$package_file"
-            source_dir="$(dirname "$package_file")"
-          fi
-          test -f "$source_dir/package.json"
-          test -f "$source_dir/README.md"
-          cp -a "$source_dir"/. .
+          test -f /tmp/showbizz-source/package.json
+          test -f /tmp/showbizz-source/README.md
+          cp -a /tmp/showbizz-source/. .
+          # The connected GitHub App cannot push new workflow files without the
+          # Actions/workflows permission. Keep the repository's importer workflow,
+          # but omit the archive's optional CI workflow from this import.
           rm -f .github/workflows/ci.yml
           rm -f showbizz-cars-hostinger-ready.zip
 
