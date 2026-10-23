@@ -3,7 +3,7 @@ import { EnquiryForm } from "@/components/site/enquiry-form";
 import { SiteShell } from "@/components/site/shell";
 import { DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getPublishedVehicle } from "@/lib/showbizz/content";
-import { enquiryWhatsAppHref } from "@/lib/showbizz/present";
+import { enquiryWhatsAppHref, vehicleWhatsAppHref } from "@/lib/showbizz/present";
 import { documentHead, metaDescription, vehicleJsonLd } from "@/lib/showbizz/seo";
 
 export const Route = createFileRoute("/vehicles/$slug")({
@@ -35,6 +35,7 @@ function availabilityLabel(value: "available" | "unavailable" | "on_request"): s
 function VehiclePage() {
   const data = Route.useLoaderData();
   const { vehicle } = data;
+  const whatsAppHref = vehicleWhatsAppHref(data.settings, vehicle.title);
   const specs = [
     ["Category", vehicle.category],
     ["Seats", vehicle.seats ? String(vehicle.seats) : null],
@@ -44,7 +45,7 @@ function VehiclePage() {
       vehicle.transmission === "automatic" ? "Automatic" : vehicle.transmission === "manual" ? "Manual" : null,
     ],
     ["Fuel", vehicle.fuel],
-    ["Availability", availabilityLabel(vehicle.availability)],
+    ["Availability", vehicle.catalogOnly ? "Details to be confirmed" : availabilityLabel(vehicle.availability)],
     ["Daily rate", vehicle.dailyRateLabel],
   ].filter((row): row is [string, string] => Boolean(row[1]));
 
@@ -55,9 +56,20 @@ function VehiclePage() {
           <Link to="/vehicles" className="underline">Our cars</Link>
         </p>
         <h1 className="mt-4 font-display text-4xl md:text-5xl">{vehicle.title}</h1>
+        <div className="mt-5">
+          {whatsAppHref ? (
+            <a href={whatsAppHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-accent-fg hover:opacity-90">
+              Enquire about this car on WhatsApp <span className="ml-2" aria-hidden="true">↗</span>
+            </a>
+          ) : (
+            <p className="text-sm text-muted">WhatsApp enquiry is not configured yet. <Link to="/contact" className="underline">Contact the team</Link>.</p>
+          )}
+        </div>
         {vehicle.summary ? <p className="mt-4 max-w-2xl text-lg text-muted">{vehicle.summary}</p> : null}
         <p className="mt-4 text-sm text-muted">
-          Availability is entered by the team. It can change before anyone replies.
+          {vehicle.catalogOnly
+            ? "This model was requested for the catalogue. Current availability has not been confirmed."
+            : "Availability is entered by the team. It can change before anyone replies."}
         </p>
         {vehicle.availabilityNote ? <p className="mt-2 text-sm">{vehicle.availabilityNote}</p> : null}
 
@@ -94,12 +106,18 @@ function VehiclePage() {
           <div className="mt-8 max-w-2xl whitespace-pre-wrap">{vehicle.description}</div>
         ) : null}
 
-        <div className="mt-10 max-w-2xl">
-          <EnquiryForm
-            vehicleSlug={vehicle.slug}
-            whatsAppHref={enquiryWhatsAppHref(data.settings, vehicle.title)}
-          />
-        </div>
+        {vehicle.catalogOnly ? (
+          <p className="mt-10 max-w-2xl text-sm text-muted">
+            Vehicle-specific booking enquiries will be enabled when the team completes this listing. You can ask about this model using WhatsApp above.
+          </p>
+        ) : (
+          <div className="mt-10 max-w-2xl">
+            <EnquiryForm
+              vehicleSlug={vehicle.slug}
+              whatsAppHref={enquiryWhatsAppHref(data.settings, vehicle.title)}
+            />
+          </div>
+        )}
       </article>
     </SiteShell>
   );
