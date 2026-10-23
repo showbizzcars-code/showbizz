@@ -24,6 +24,20 @@ export function sameAs(settings: PublicSettings): string[] {
   ].filter((url): url is string => Boolean(url));
 }
 
+export function vehicleWhatsAppHref(settings: PublicSettings, vehicleTitle: string): string | null {
+  return whatsAppHref(
+    settings.whatsappE164,
+    `Hello, I would like to enquire about the ${vehicleTitle} listed on the ${BRAND_NAME} website. Please share the confirmed availability, specifications, and rental quote.`,
+  );
+}
+
+export function subscriptionWhatsAppHref(settings: PublicSettings): string | null {
+  return whatsAppHref(
+    settings.whatsappE164,
+    `Hello, I would like to enquire about a luxury car subscription with ${BRAND_NAME}. Please share the available vehicles and subscription options.`,
+  );
+}
+
 export function enquiryWhatsAppHref(settings: PublicSettings, vehicleTitle?: string): string | null {
   const text = vehicleTitle
     ? `Hello, I sent an enquiry on the ${BRAND_NAME} website about ${vehicleTitle}.`

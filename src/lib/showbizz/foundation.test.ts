@@ -14,7 +14,7 @@ import {
   rentalBusinessLd,
   xmlEscape,
 } from "./seo.ts";
-import { httpsUrl, publicSettingsFromRows, whatsAppHref } from "./settings.ts";
+import { DEFAULT_WHATSAPP_E164, httpsUrl, publicSettingsFromRows, whatsAppHref } from "./settings.ts";
 import {
   PUBLIC_FAQ_SQL,
   PUBLIC_POST_LIST_SQL,
@@ -131,7 +131,7 @@ test("editors cannot grant staff or change settings", () => {
   assert.equal(can(null, "enquiry.read"), false);
 });
 
-test("money, whatsapp, and settings do not invent values", () => {
+test("money, WhatsApp helpers, and default business WhatsApp settings are consistent", () => {
   assert.equal(formatDailyRate(125000, "INR"), "INR 1,250.00");
   assert.equal(formatDailyRate(-1, "INR"), null);
   assert.equal(formatDailyRate(100, "inr"), null);
@@ -146,7 +146,12 @@ test("money, whatsapp, and settings do not invent values", () => {
   ]);
   assert.equal(settings.instagramUrl, null);
   assert.equal(settings.publicEmail, null);
-  assert.equal(settings.whatsappE164, null);
+  assert.equal(settings.whatsappE164, DEFAULT_WHATSAPP_E164);
+  assert.equal(publicSettingsFromRows([]).whatsappE164, DEFAULT_WHATSAPP_E164);
+  assert.equal(
+    publicSettingsFromRows([{ key: "whatsapp_e164", value: "+447700900123" }]).whatsappE164,
+    "+447700900123",
+  );
 });
 
 test("sitemap and robots stay crawlable and credential-free", () => {
