@@ -27,9 +27,15 @@ jobs:
           test -f showbizz-cars-hostinger-ready.zip
           mkdir -p /tmp/showbizz-source
           unzip -q showbizz-cars-hostinger-ready.zip -d /tmp/showbizz-source
-          test -f /tmp/showbizz-source/package.json
-          test -f /tmp/showbizz-source/README.md
-          cp -a /tmp/showbizz-source/. .
+          source_dir=/tmp/showbizz-source
+          if [ ! -f "$source_dir/package.json" ]; then
+            package_file="$(find /tmp/showbizz-source -mindepth 2 -maxdepth 3 -type f -name package.json -print -quit)"
+            test -n "$package_file"
+            source_dir="$(dirname "$package_file")"
+          fi
+          test -f "$source_dir/package.json"
+          test -f "$source_dir/README.md"
+          cp -a "$source_dir"/. .
           rm -f .github/workflows/ci.yml
           rm -f showbizz-cars-hostinger-ready.zip
 
