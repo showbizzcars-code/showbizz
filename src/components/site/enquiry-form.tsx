@@ -4,6 +4,29 @@ import { submitEnquiry } from "@/lib/showbizz/content";
 const control =
   "mt-2 w-full rounded-control border border-line bg-bg px-3 text-ink outline-none";
 
+function leadWhatsAppHref(
+  baseHref: string,
+  details: { contactName: string; phone: string; email: string; message: string },
+): string | null {
+  try {
+    const url = new URL(baseHref);
+    const opening = url.searchParams.get("text") || "Hello, I would like to enquire about a car with Showbizz Cars.";
+    const lines = [
+      opening,
+      "",
+      "Website enquiry details:",
+      `Name: ${details.contactName}`,
+      `Phone: ${details.phone}`,
+      ...(details.email ? [`Email: ${details.email}`] : []),
+      `Message: ${details.message}`,
+    ];
+    url.searchParams.set("text", lines.join("\n"));
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function EnquiryForm({
   vehicleSlug = "",
   whatsAppHref = null,
@@ -14,27 +37,34 @@ export function EnquiryForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, setPending] = useState(false);
+  const [submittedWhatsAppHref, setSubmittedWhatsAppHref] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const details = {
+      contactName: String(form.get("contactName") ?? "").trim(),
+      phone: String(form.get("phone") ?? "").trim(),
+      email: String(form.get("email") ?? "").trim(),
+      message: String(form.get("message") ?? "").trim(),
+    };
     setPending(true);
     setError(null);
     try {
       const result = await submitEnquiry({
         data: {
-          contactName: String(form.get("contactName") ?? ""),
-          phone: String(form.get("phone") ?? ""),
-          email: String(form.get("email") ?? ""),
-          message: String(form.get("message") ?? ""),
-          startOn: String(form.get("startOn") ?? ""),
-          endOn: String(form.get("endOn") ?? ""),
+          ...details,
+          startOn: "",
+          endOn: "",
           vehicleSlug,
           companyWebsite: String(form.get("companyWebsite") ?? ""),
         },
       });
       if (!result.ok) setError(result.error);
-      else setDone(true);
+      else {
+        setSubmittedWhatsAppHref(whatsAppHref ? leadWhatsAppHref(whatsAppHref, details) : null);
+        setDone(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send the enquiry.");
     } finally {
@@ -47,15 +77,23 @@ export function EnquiryForm({
       <div className="rounded-card border border-line bg-surface p-4">
         <h2 className="font-display text-2xl">Enquiry saved</h2>
         <p className="mt-3 text-sm text-muted">
-          This is not a confirmed reservation, and no payment has been taken. The team reviews enquiries manually.
+          Your enquiry has been saved. This is not a confirmed reservation, and no payment has been taken.
         </p>
-        {whatsAppHref ? (
+        {submittedWhatsAppHref ? (
           <p className="mt-4">
-            <a className="underline" href={whatsAppHref} rel="noreferrer">
-              Continue the same enquiry on WhatsApp
+            <a
+              className="inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-medium text-accent-fg"
+              href={submittedWhatsAppHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Continue to WhatsApp with enquiry details ↗
             </a>
+            <span className="mt-2 block text-xs text-muted">Review the message in WhatsApp and tap Send to contact the team.</span>
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-4 text-sm text-muted">WhatsApp is not configured yet. The team can follow up using the contact details you provided.</p>
+        )}
       </div>
     );
   }
@@ -64,7 +102,7 @@ export function EnquiryForm({
     <form onSubmit={onSubmit} className="rounded-card border border-line bg-surface p-4" noValidate>
       <h2 className="font-display text-2xl">Send an enquiry</h2>
       <p className="mt-2 text-sm text-muted">
-        Required fields are name, phone, and a short message. Dates are optional.
+        Share your contact details and message, and our team will get back to you.
       </p>
       <div className="hp" aria-hidden="true">
         <label>
@@ -85,16 +123,6 @@ export function EnquiryForm({
           Email <span className="font-normal text-muted">(optional)</span>
           <input name="email" type="email" autoComplete="email" className={`${control} h-11`} />
         </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm font-medium">
-            Start <span className="font-normal text-muted">(optional)</span>
-            <input name="startOn" type="date" className={`${control} h-11`} />
-          </label>
-          <label className="text-sm font-medium">
-            End <span className="font-normal text-muted">(optional)</span>
-            <input name="endOn" type="date" className={`${control} h-11`} />
-          </label>
-        </div>
       </div>
       <label className="mt-4 block text-sm font-medium">
         Message
