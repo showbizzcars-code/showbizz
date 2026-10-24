@@ -755,7 +755,7 @@ function SettingsTab({ role }: { role: string }) {
         </div>
         <div>
           <label className="block text-xs uppercase text-muted font-medium mb-1">Address</label>
-          <textarea name="address" rows={2} defaultValue={settings.address || DEFAULT_BUSINESS_ADDRESS} className="w-full rounded border border-line bg-bg p-2 text-sm" />
+          <textarea name="address" rows={2} value={settings.address ?? DEFAULT_BUSINESS_ADDRESS} onChange={(event) => setSettings((current) => ({ ...current, address: event.target.value }))} className="w-full rounded border border-line bg-bg p-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs uppercase text-muted font-medium mb-1">Instagram URL</label>
