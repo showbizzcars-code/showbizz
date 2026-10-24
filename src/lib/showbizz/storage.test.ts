@@ -76,6 +76,7 @@ test("uploadImageToStorage throws when unconfigured without ALLOW_MOCK_STORAGE",
   const origEnv = process.env.NODE_ENV;
   const origMock = process.env.ALLOW_MOCK_STORAGE;
   const origBlob = process.env.BLOB_READ_WRITE_TOKEN;
+  const origS3 = ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"].map((key) => [key, process.env[key]] as const);
   process.env.NODE_ENV = "development";
   delete process.env.ALLOW_MOCK_STORAGE;
   delete process.env.BLOB_READ_WRITE_TOKEN;
@@ -101,13 +102,16 @@ test("uploadImageToStorage throws when unconfigured without ALLOW_MOCK_STORAGE",
   } finally {
     process.env.NODE_ENV = origEnv;
     if (origBlob !== undefined) process.env.BLOB_READ_WRITE_TOKEN = origBlob; else delete process.env.BLOB_READ_WRITE_TOKEN;
-    if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock;
+    for (const [key, value] of origS3) {
+      if (value !== undefined) process.env[key] = value;
+      else delete process.env[key];
+    }
+    if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock; else delete process.env.ALLOW_MOCK_STORAGE;
   }
 });
 
 test("uploadImageToStorage rejects partial S3 configuration even in mock mode", async () => {
-  const origEndpoint = process.env.S3_ENDPOINT;
-  const origBucket = process.env.S3_BUCKET;
+  const origS3 = ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"].map((key) => [key, process.env[key]] as const);
   const origMock = process.env.ALLOW_MOCK_STORAGE;
 
   process.env.S3_ENDPOINT = "https://example.r2.cloudflarestorage.com";
@@ -129,8 +133,10 @@ test("uploadImageToStorage rejects partial S3 configuration even in mock mode", 
       /Partial S3 configuration detected/
     );
   } finally {
-    if (origEndpoint !== undefined) process.env.S3_ENDPOINT = origEndpoint; else delete process.env.S3_ENDPOINT;
-    if (origBucket !== undefined) process.env.S3_BUCKET = origBucket; else delete process.env.S3_BUCKET;
+    for (const [key, value] of origS3) {
+      if (value !== undefined) process.env[key] = value;
+      else delete process.env[key];
+    }
     if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock; else delete process.env.ALLOW_MOCK_STORAGE;
   }
 });
