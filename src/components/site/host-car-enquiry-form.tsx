@@ -97,14 +97,23 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
       (value): value is File => value instanceof File && value.size > 0,
     );
 
+    const vehicleData = {
+      title: String(form.get("vehicleMakeModel") ?? "").trim(),
+      modelYear: Number(form.get("modelYear")),
+      fuel: String(form.get("fuelType") ?? "").trim(),
+      transmission: String(form.get("transmission") ?? "").trim().toLowerCase(),
+      currentKilometres: Number(form.get("currentKilometres")),
+      registrationState: String(form.get("registrationState") ?? "").trim(),
+      additionalInfo: String(form.get("additionalInfo") ?? "").trim(),
+    };
     const vehicleDetails = [
-      ["Brand & Model", form.get("vehicleMakeModel")],
-      ["Year of Manufacture", form.get("modelYear")],
-      ["Fuel Type", form.get("fuelType")],
-      ["Transmission", form.get("transmission")],
-      ["Current Odometer Reading", form.get("currentKilometres") ? String(form.get("currentKilometres")) + " km" : ""],
-      ["State of Registration", form.get("registrationState")],
-      ["Additional information", form.get("additionalInfo")],
+      ["Brand & Model", vehicleData.title],
+      ["Year of Manufacture", vehicleData.modelYear],
+      ["Fuel Type", vehicleData.fuel],
+      ["Transmission", vehicleData.transmission],
+      ["Current Odometer Reading", Number.isFinite(vehicleData.currentKilometres) ? String(vehicleData.currentKilometres) + " km" : ""],
+      ["State of Registration", vehicleData.registrationState],
+      ["Additional information", vehicleData.additionalInfo],
     ]
       .map(([label, value]) => [String(label), String(value ?? "").trim()] as const)
       .filter(([, value]) => value.length > 0);
@@ -113,7 +122,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
       ...vehicleDetails.map(([label, value]) => label + ": " + value),
     ].join("\n");
 
-    const uploadedPhotoKeys: string[] = [];
+    const uploadedPhotos: Array<{ storageKey: string; contentType: string; byteSize: number; alt: string }> = [];
     setPending(true);
     setError(null);
     setUploadStatus(null);
@@ -125,7 +134,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
         setUploadStatus("Uploading photo " + position + " of " + imageFiles.length + "…");
         const upload = await uploadHostCarPhoto({ data: image });
         if (!upload.ok) throw new Error("Photo " + position + ": " + upload.error);
-        uploadedPhotoKeys.push(upload.storageKey);
+        uploadedPhotos.push({ storageKey: upload.storageKey, contentType: upload.contentType, byteSize: upload.byteSize, alt: upload.alt });
       }
 
       setUploadStatus("Saving your vehicle details…");
@@ -139,12 +148,13 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             vehicleSlug: "",
             companyWebsite: String(form.get("companyWebsite") ?? ""),
           },
-          images: uploadedPhotoKeys,
+          images: uploadedPhotos,
+          vehicle: vehicleData,
         },
       });
       if (!result.ok) {
-        if (uploadedPhotoKeys.length) {
-          try { await discardHostCarPhotos({ data: uploadedPhotoKeys }); } catch { /* Preserve the submission error. */ }
+        if (uploadedPhotos.length) {
+          try { await discardHostCarPhotos({ data: uploadedPhotos.map((photo) => photo.storageKey) }); } catch { /* Preserve the submission error. */ }
         }
         setError(result.error);
         return;
@@ -157,8 +167,8 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
       );
       setDone(true);
     } catch (err) {
-      if (uploadedPhotoKeys.length) {
-        try { await discardHostCarPhotos({ data: uploadedPhotoKeys }); } catch { /* Preserve the upload error. */ }
+      if (uploadedPhotos.length) {
+        try { await discardHostCarPhotos({ data: uploadedPhotos.map((photo) => photo.storageKey) }); } catch { /* Preserve the upload error. */ }
       }
       setError(err instanceof Error ? err.message : "Could not submit your vehicle details.");
     } finally {
@@ -172,7 +182,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
         <p className="eyebrow">Submission received</p>
         <h3 className="mt-3 font-display text-3xl">Thank you for sharing your vehicle details.</h3>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          Your enquiry and selected vehicle photos have been saved for the Showbizz Cars team to review.
+          Your vehicle and selected photos have been saved as a draft in the staff inventory, and your enquiry has been recorded. The team must review and publish the vehicle before it appears publicly in Cars.
           Submission does not guarantee vehicle acceptance or rental income.
         </p>
         {savedWhatsAppHref ? (
@@ -210,10 +220,10 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
           <input name="email" type="email" autoComplete="email" className={control} />
         </label>
         <label className="text-sm font-medium">Brand &amp; Model
-          <input name="vehicleMakeModel" required maxLength={200} placeholder="e.g. BMW X5" className={control} />
+          <input name="vehicleMakeModel" required maxLength={120} placeholder="e.g. BMW X5" className={control} />
         </label>
         <label className="text-sm font-medium">Year of Manufacture
-          <input name="modelYear" type="number" required min={1900} max={new Date().getFullYear()} step={1} placeholder="e.g. 2023" className={control} />
+          <input name="modelYear" type="number" required min={1980} max={new Date().getFullYear()} step={1} placeholder="e.g. 2023" className={control} />
         </label>
         <label className="text-sm font-medium">Fuel Type
           <select name="fuelType" required defaultValue="" className={control}>
