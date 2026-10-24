@@ -214,75 +214,69 @@ async function deleteFromVercelBlob(storageKey: string): Promise<void> {
 }
 export async function uploadImageToStorage(input: ImageUploadInput): Promise<StoredImageResult> {
   const validation = validateImageInput(input.contentType, input.byteSize, input.buffer);
-  if (!validation.ok) {
-    throw new Error(validation.error);
-  }
+  if (!validation.ok) throw new Error(validation.error);
 
   const storageKey = generateStorageKey(input.fileName, input.contentType);
-
   const endpoint = process.env.S3_ENDPOINT?.trim();
   const bucket = process.env.S3_BUCKET?.trim();
   const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
-
   const isS3Configured = Boolean(endpoint && bucket && accessKeyId && secretAccessKey);
-  const isPartialS3 = Boolean(
-    (endpoint || bucket || accessKeyId || secretAccessKey) && !isS3Configured
-  );
+  const isPartialS3 = Boolean((endpoint || bucket || accessKeyId || secretAccessKey) && !isS3Configured);
 
   if (isPartialS3) {
-    throw new Error(
-      "Partial S3 configuration detected. All four settings (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY) must be provided."
-    );
+    throw new Error("Partial S3 configuration detected. All four settings (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY) must be provided.");
+  }
+
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  const shouldUseBlob = Boolean(blobToken) && process.env.NODE_ENV !== "test" &&
+    (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === "production");
+
+  if (shouldUseBlob) {
+    const blobStorageKey = "blob/" + storageKey;
+    const expectedPublicUrl = publicImageUrl(blobStorageKey);
+    if (process.env.NODE_ENV === "production" && !expectedPublicUrl) {
+      throw new Error("IMAGE_PUBLIC_BASE_URL must point to the public Vercel Blob store before image uploads are enabled.");
+    }
+    const blob = await uploadToVercelBlob(blobStorageKey, input);
+    if (expectedPublicUrl && new URL(expectedPublicUrl).origin !== new URL(blob.url).origin) {
+      try { await deleteFromVercelBlob(blobStorageKey); } catch { /* Let the original configuration error be visible. */ }
+      throw new Error("IMAGE_PUBLIC_BASE_URL does not match the configured Vercel Blob store.");
+    }
+    return {
+      storageKey: blobStorageKey,
+      publicUrl: blob.url,
+      contentType: input.contentType,
+      byteSize: input.byteSize,
+    };
   }
 
   if (isS3Configured) {
     const cleanEndpoint = endpoint!.replace(/\/+$/, "");
-    const uploadUrl = `${cleanEndpoint}/${bucket}/${storageKey}`;
+    const uploadUrl = cleanEndpoint + "/" + bucket + "/" + storageKey;
     const payloadHash = sha256(input.buffer);
-
     const signedHeaders = signS3Request({
       method: "PUT",
       url: uploadUrl,
       accessKeyId: accessKeyId!,
       secretAccessKey: secretAccessKey!,
-      headers: {
-        "content-type": input.contentType,
-        "content-length": String(input.byteSize),
-      },
+      headers: { "content-type": input.contentType, "content-length": String(input.byteSize) },
       payloadHash,
     });
-
-    const response = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: signedHeaders,
-      body: new Uint8Array(input.buffer),
-    });
-
-    if (!response.ok) {
-      throw new Error(`S3 upload failed with status ${response.status}`);
-    }
+    const response = await fetch(uploadUrl, { method: "PUT", headers: signedHeaders, body: new Uint8Array(input.buffer) });
+    if (!response.ok) throw new Error("S3 upload failed with status " + response.status);
   } else {
     if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "S3 object storage is not configured for production image persistence. Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY in environment variables."
-      );
+      throw new Error("Real image storage is not configured for production. Connect Vercel Blob or configure all required S3 storage variables.");
     }
     const isMockAllowed = process.env.ALLOW_MOCK_STORAGE === "true" || process.env.NODE_ENV === "test";
     if (!isMockAllowed) {
-      throw new Error(
-        "S3 object storage is not configured. Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY in environment variables or set ALLOW_MOCK_STORAGE=true for local development."
-      );
+      throw new Error("Image storage is not configured. Connect Vercel Blob, configure S3 variables, or enable the explicit local-only test mock.");
     }
-    console.log(`[Storage] Local/Mock storage handled key: ${storageKey}`);
+    console.log("[Storage] Local/Mock storage handled key: " + storageKey);
   }
 
-  return {
-    storageKey,
-    publicUrl: publicImageUrl(storageKey),
-    contentType: input.contentType,
-    byteSize: input.byteSize,
-  };
+  return { storageKey, publicUrl: publicImageUrl(storageKey), contentType: input.contentType, byteSize: input.byteSize };
 }
 
 async function sqlClient() {
