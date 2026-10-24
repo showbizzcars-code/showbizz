@@ -27,9 +27,9 @@ Set production values in Hostinger's environment-variable UI, never in Git.
 - `DATABASE_URL`: connection string for a persistent PostgreSQL database.
 - `BETTER_AUTH_URL`: the final HTTPS domain (for example, `https://your-domain.example`).
 - `BETTER_AUTH_SECRET`: a randomly generated, unique secret (min 32 characters).
-- `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`: S3-compatible object storage configuration for vehicle image persistence.
-- `S3_REGION`: optional AWS/S3 region (defaults to `us-east-1` if omitted).
-- `IMAGE_PUBLIC_BASE_URL`: public CDN / bucket URL for uploaded images (e.g. `https://images.your-domain.example`).
+- On Vercel, connect a **public Vercel Blob store** to the project. Vercel injects `BLOB_READ_WRITE_TOKEN`; do not paste it into Git or browser variables.
+- `IMAGE_PUBLIC_BASE_URL`: the exact public Blob store origin (for example `https://<store-id>.public.blob.vercel-storage.com`) so stored image paths resolve on public pages.
+- For non-Vercel hosting, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and optional `S3_REGION` configure AWS S3, Cloudflare R2, or MinIO instead.
 
 `VITE_` values are compiled into browser assets; never put secrets in a `VITE_` variable. Do not copy example placeholders to production.
 
