@@ -31,13 +31,11 @@ jobs:
         id: credentials
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         shell: bash
         run: |
-          if [[ -z "$VERCEL_TOKEN" || -z "$VERCEL_ORG_ID" || -z "$VERCEL_PROJECT_ID" ]]; then
+          if [[ -z "$VERCEL_TOKEN" ]]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Vercel deployment skipped. Add VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID as repository Actions secrets, then rerun this workflow."
+            echo "::notice::Vercel deployment skipped. Add VERCEL_TOKEN as a repository Actions secret, then rerun this workflow."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
@@ -62,6 +60,12 @@ jobs:
       - name: Install dependencies
         if: ${{ steps.credentials.outputs.configured == 'true' }}
         run: npm ci
+
+      - name: Link Vercel project
+        if: ${{ steps.credentials.outputs.configured == 'true' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel link --yes --project showbizz --scope showbizz --token="$VERCEL_TOKEN"
 
       - name: Pull Vercel preview settings
         if: ${{ steps.credentials.outputs.configured == 'true' && inputs.target != 'production' }}
