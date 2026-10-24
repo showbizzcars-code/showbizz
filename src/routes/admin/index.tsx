@@ -276,6 +276,7 @@ function VehiclesTab() {
     const files = Array.from(input.files ?? []);
     input.value = "";
     const vehicleId = selectedVehicle?.vehicle?.id;
+    const vehicleTitle = selectedVehicle?.vehicle?.title ?? "";
     if (!files.length || !vehicleId) return;
 
     let completed = 0;
@@ -293,7 +294,7 @@ function VehiclesTab() {
             fileName: image.fileName,
             contentType: image.contentType,
             base64Data: image.base64Data,
-            alt: selectedVehicle.vehicle.title || file.name,
+            alt: vehicleTitle || file.name,
           },
         });
         completed += 1;
