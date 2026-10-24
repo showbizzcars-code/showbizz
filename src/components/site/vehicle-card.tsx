@@ -40,12 +40,12 @@ export function VehicleCard({
         <div className="p-5 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-display text-3xl group-hover:text-[#c9ccca]">{vehicle.title}</h2>
-            <p className="text-xs uppercase tracking-[.13em] text-muted">{vehicle.catalogOnly ? "Details to be confirmed" : availabilityLabel(vehicle.availability)}</p>
+            <p className="text-xs uppercase tracking-[.13em] text-muted">{availabilityLabel(vehicle.availability)}</p>
           </div>
           {vehicle.summary ? <p className="mt-3 max-w-xl text-sm text-muted">{vehicle.summary}</p> : null}
           {facts.length > 0 ? <p className="mt-5 text-xs font-semibold uppercase tracking-[.12em] text-muted">{facts.join(" · ")}</p> : null}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-            <p className="text-sm tabular-nums">{vehicle.dailyRateLabel ? `${vehicle.dailyRateLabel} / day` : vehicle.catalogOnly ? "Price not provided" : "Price on enquiry"}</p>
+            <p className="text-sm tabular-nums">{vehicle.dailyRateLabel ? `${vehicle.dailyRateLabel} / day` : "Price on enquiry"}</p>
             <span className="text-xl text-muted" aria-hidden="true">↗</span>
           </div>
         </div>
