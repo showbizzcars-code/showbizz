@@ -152,7 +152,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
 
       setSavedWhatsAppHref(
         whatsAppHref
-          ? leadWhatsAppHref(whatsAppHref, { ...details, message: result.message })
+          ? leadWhatsAppHref(whatsAppHref, { ...details, message })
           : null,
       );
       setDone(true);
@@ -180,7 +180,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             <a href={savedWhatsAppHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-accent-fg">
               Continue to WhatsApp <span className="ml-2" aria-hidden="true">↗</span>
             </a>
-            <p className="mt-2 text-xs text-muted">Review the prefilled details and photo links, then tap Send in WhatsApp.</p>
+            <p className="mt-2 text-xs text-muted">Review the prefilled details, then tap Send in WhatsApp. Your uploaded photos are already saved with the enquiry for our team.</p>
           </div>
         ) : (
           <p className="mt-5 text-sm text-muted">WhatsApp is not configured yet. The team can follow up using the contact details you provided.</p>
