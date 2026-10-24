@@ -203,7 +203,7 @@ async function deleteFromVercelBlob(storageKey: string): Promise<void> {
     headers: { ...blobApiHeaders(token, storeId), "content-type": "application/json" },
     body: JSON.stringify({ urls: [url] }),
   });
-  if (!response.ok && response.status !== 404) {
+  if (!response.ok) {
     let code = "";
     try {
       const data = await response.json() as { error?: { code?: unknown } };
