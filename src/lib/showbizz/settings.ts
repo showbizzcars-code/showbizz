@@ -2,7 +2,7 @@ import { PUBLIC_SETTING_KEYS, type PublicSettingKey } from "./brand.ts";
 import { normalizePhone } from "./validate.ts";
 
 export const DEFAULT_WHATSAPP_E164 = "+919380130957";
-export const DEFAULT_BUSINESS_ADDRESS = "SNN Raj Serenity, Begur-Koppa Road, Yellanahalli, off Bannerghatta Road, Bengaluru, Karnataka";
+export const DEFAULT_BUSINESS_ADDRESS = "SNN Raj Serenity, Begur Kopa Road, Yellanahalli, off Bannerghatta Road, Bengaluru";
 
 export type PublicSettings = {
   whatsappE164: string | null;
