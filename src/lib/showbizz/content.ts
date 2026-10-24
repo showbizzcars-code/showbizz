@@ -22,7 +22,6 @@ import {
 import { isStaffRole, type StaffRole } from "./access.ts";
 import { parseEnquiry, parseSlug } from "./validate.ts";
 import { publicImageUrl } from "./server-env.server.ts";
-import { CLIENT_CAR_CATALOG } from "./client-cars.ts";
 
 export type Availability = "available" | "unavailable" | "on_request";
 
@@ -40,8 +39,6 @@ export type PublicVehicleCard = {
   availabilityNote: string | null;
   dailyRateLabel: string | null;
   price: { currency: string; amount: string } | null;
-  /** True only for a client-listed model awaiting an authorised inventory record. */
-  catalogOnly?: boolean;
 };
 
 export type PublicVehicleImage = {
@@ -204,46 +201,11 @@ export const listPublishedVehicles = createServerFn({ method: "GET" }).handler(a
 export const listCarsPage = createServerFn({ method: "GET" }).handler(async () => {
   const sql = await sqlClient();
   const rows = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_LIST_SQL);
-  const publishedVehicles = rows.map(cardFromRow);
   const settings = await readSettings();
-  const origin = await requestOrigin();
-  const slugs = CLIENT_CAR_CATALOG.map((model) => model.slug);
-  const existingRows = await sql.query<{ slug: string }>(
-    "select slug from vehicle where slug = any($1::text[])",
-    [slugs],
-  );
-  const existingSlugs = new Set(existingRows.map((row) => row.slug));
-  const publishedBySlug = new Map(publishedVehicles.map((vehicle) => [vehicle.slug, vehicle]));
-
-  const requestedModels = CLIENT_CAR_CATALOG.flatMap((model): PublicVehicleCard[] => {
-    const published = publishedBySlug.get(model.slug);
-    if (published) return [published];
-    if (existingSlugs.has(model.slug)) return [];
-
-    return [{
-      slug: model.slug,
-      title: model.title,
-      summary: "Client-listed model. Photos, specifications, pricing, rental terms and current availability have not yet been supplied.",
-      imageUrl: null,
-      category: null,
-      seats: null,
-      modelYear: null,
-      transmission: null,
-      fuel: null,
-      availability: "on_request",
-      availabilityNote: null,
-      dailyRateLabel: null,
-      price: null,
-      catalogOnly: true,
-    }];
-  });
-
-  const requestedSlugs = new Set(slugs);
-  const additionalVehicles = publishedVehicles.filter((vehicle) => !requestedSlugs.has(vehicle.slug));
   return {
-    origin,
+    origin: await requestOrigin(),
     settings,
-    vehicles: [...requestedModels, ...additionalVehicles],
+    vehicles: rows.map(cardFromRow),
   };
 });
 
@@ -257,41 +219,7 @@ export const getPublishedVehicle = createServerFn({ method: "GET" })
     const sql = await sqlClient();
     const rows = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_BY_SLUG_SQL, [slug]);
     const row = rows[0];
-    if (!row) {
-      const clientModel = CLIENT_CAR_CATALOG.find((model) => model.slug === slug);
-      if (!clientModel) return null;
-
-      // A draft or archived row must stay hidden; only show an unpersisted model
-      // as a clearly labelled catalogue placeholder.
-      const anyListing = await sql.query<{ slug: string }>(
-        "select slug from vehicle where slug = $1 limit 1",
-        [slug],
-      );
-      if (anyListing[0]) return null;
-
-      return {
-        origin: await requestOrigin(),
-        settings: await readSettings(),
-        vehicle: {
-          slug: clientModel.slug,
-          title: clientModel.title,
-          summary: "Client-listed model. Photos, specifications, pricing, rental terms and current availability have not yet been supplied.",
-          imageUrl: null,
-          category: null,
-          seats: null,
-          modelYear: null,
-          transmission: null,
-          fuel: null,
-          availability: "on_request" as const,
-          availabilityNote: null,
-          dailyRateLabel: null,
-          price: null,
-          catalogOnly: true,
-          description: "This model was included in the client-supplied Cars list. Add verified photos, specifications, pricing, rental terms and availability through the admin panel before treating it as a fully configured listing.",
-          images: [],
-        },
-      };
-    }
+    if (!row) return null;
     const { publicImageUrl } = await import("./server-env.server.ts");
     const images = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_IMAGES_SQL, [row.id]);
     const detail: PublicVehicleDetail = {

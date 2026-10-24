@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   adminListVehicles,
   adminSaveVehicle,
-  adminAddClientCarCatalog,
   adminDeleteVehicle,
   adminGetVehicle,
   adminUploadVehicleImage,
@@ -24,7 +23,7 @@ import {
   adminSaveSettings,
 } from "@/lib/showbizz/admin";
 import { getAdminOverview, type AdminOverview } from "@/lib/showbizz/content";
-import { DEFAULT_WHATSAPP_E164 } from "@/lib/showbizz/settings";
+import { DEFAULT_BUSINESS_ADDRESS, DEFAULT_WHATSAPP_E164 } from "@/lib/showbizz/settings";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -132,7 +131,6 @@ function VehiclesTab() {
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [addingClientList, setAddingClientList] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const loadVehicles = async () => {
@@ -196,21 +194,6 @@ function VehiclesTab() {
       setMsg(err.message || "Failed to save vehicle.");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const addClientCarList = async () => {
-    if (!confirm("Add the 11 client-requested models as “On request” listings and align existing model labels to the client’s exact wording? Existing specifications, photos, prices, descriptions and statuses will be preserved.")) return;
-    setAddingClientList(true);
-    setMsg(null);
-    try {
-      const result = await adminAddClientCarCatalog();
-      setMsg(`${result.inserted} new model(s) added; ${result.existing} existing listing title(s) aligned to the client’s names. Other vehicle details were preserved. Add photos and enter verified details where available.`);
-      await loadVehicles();
-    } catch (err: any) {
-      setMsg(err.message || "Could not add the client car list.");
-    } finally {
-      setAddingClientList(false);
     }
   };
 
@@ -401,9 +384,6 @@ function VehiclesTab() {
           <p className="mt-2 max-w-2xl text-sm text-muted">Manage the cars shown on the public Cars page. Existing listings can be edited individually.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={addClientCarList} disabled={addingClientList} className="rounded-control border border-line bg-surface px-4 py-2 text-sm font-medium disabled:opacity-60">
-            {addingClientList ? "Adding models…" : "Add client car list"}
-          </button>
           <button onClick={() => openEdit()} className="bg-accent text-accent-fg px-4 py-2 rounded-control text-sm font-medium">
             + Add Vehicle
           </button>
@@ -439,7 +419,7 @@ function VehiclesTab() {
               ))}
               {vehicles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted">No car listings yet. Use “Add client car list” to add the requested models, or add a car individually.</td>
+                  <td colSpan={5} className="p-6 text-center text-muted">No car listings yet. Add a verified vehicle listing to publish it on the website.</td>
                 </tr>
               )}
             </tbody>
@@ -775,7 +755,7 @@ function SettingsTab({ role }: { role: string }) {
         </div>
         <div>
           <label className="block text-xs uppercase text-muted font-medium mb-1">Address</label>
-          <textarea name="address" rows={2} defaultValue={settings.address || ""} className="w-full rounded border border-line bg-bg p-2 text-sm" />
+          <textarea name="address" rows={2} value={settings.address ?? DEFAULT_BUSINESS_ADDRESS} onChange={(event) => setSettings((current) => ({ ...current, address: event.target.value }))} className="w-full rounded border border-line bg-bg p-2 text-sm" />
         </div>
         <div>
           <label className="block text-xs uppercase text-muted font-medium mb-1">Instagram URL</label>
