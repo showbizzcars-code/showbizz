@@ -203,7 +203,7 @@ async function deleteFromVercelBlob(storageKey: string): Promise<void> {
     headers: { ...blobApiHeaders(token, storeId), "content-type": "application/json" },
     body: JSON.stringify({ urls: [url] }),
   });
-  if (!response.ok && response.status !== 404) {
+  if (!response.ok) {
     let code = "";
     try {
       const data = await response.json() as { error?: { code?: unknown } };
@@ -212,6 +212,21 @@ async function deleteFromVercelBlob(storageKey: string): Promise<void> {
     throw new Error("Vercel Blob delete failed with status " + response.status + code + ".");
   }
 }
+/** Temporary Blob write/read/delete test used only by a guarded preview route. */
+export async function verifyVercelBlobStorage(): Promise<{ uploaded: true; publicRead: true; deleted: true }> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token || !blobStoreIdFromReadWriteToken(token)) throw new Error("Vercel Blob storage is not configured or token is invalid.");
+  const buffer = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/ZD8AAAAASUVORK5CYII=", "base64");
+  const storageKey = "blob/healthcheck/" + Date.now() + "-" + randomBytes(8).toString("hex") + ".png";
+  const result = await uploadToVercelBlob(storageKey, { fileName: "storage-health.png", contentType: "image/png", byteSize: buffer.byteLength, buffer });
+  const response = await fetch(result.url, { cache: "no-store" });
+  if (!response.ok) throw new Error("Vercel Blob public read failed with status " + response.status + ".");
+  const downloaded = Buffer.from(await response.arrayBuffer());
+  if (!downloaded.equals(buffer)) throw new Error("Vercel Blob returned different image bytes.");
+  await deleteFromVercelBlob(storageKey);
+  return { uploaded: true, publicRead: true, deleted: true };
+}
+
 export async function uploadImageToStorage(input: ImageUploadInput): Promise<StoredImageResult> {
   const validation = validateImageInput(input.contentType, input.byteSize, input.buffer);
   if (!validation.ok) throw new Error(validation.error);
