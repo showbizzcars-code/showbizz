@@ -18,8 +18,9 @@ export const Route = createFileRoute("/api/storage-smoke")({
           const { verifyVercelBlobStorage } = await import("@/lib/showbizz/storage.server");
           const checks = await verifyVercelBlobStorage();
           return Response.json({ ok: true, checks });
-        } catch {
-          return Response.json({ ok: false, error: "Blob storage smoke test failed." }, { status: 500 });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown storage failure.";
+          return Response.json({ ok: false, error: message.slice(0, 240) }, { status: 500 });
         }
       },
     },
