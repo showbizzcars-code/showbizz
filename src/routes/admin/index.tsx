@@ -31,6 +31,44 @@ export const Route = createFileRoute("/admin/")({
 
 type Tab = "overview" | "vehicles" | "enquiries" | "posts" | "faqs" | "testimonials" | "settings";
 
+type PreparedAdminVehicleImage = {
+  fileName: string;
+  contentType: "image/webp";
+  base64Data: string;
+};
+
+async function prepareAdminVehicleImage(file: File): Promise<PreparedAdminVehicleImage> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("Please select JPEG, PNG, or WebP vehicle photos.");
+  }
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) { bitmap.close(); throw new Error("Could not process " + file.name + "."); }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  let blob: Blob | null = null;
+  for (const quality of [0.84, 0.76, 0.68, 0.58, 0.48]) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+    if (blob && blob.size <= 850 * 1024) break;
+  }
+  if (!blob || blob.size > 1024 * 1024) {
+    throw new Error(file.name + " could not be compressed below 1 MB. Please choose a smaller image.");
+  }
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read " + file.name + "."));
+    reader.readAsDataURL(blob!);
+  });
+  const safeName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9 _().-]/g, "").trim().slice(0, 80) || "vehicle-photo";
+  return { fileName: safeName + ".webp", contentType: "image/webp", base64Data: dataUrl.split(",")[1] || "" };
+}
+
+
 function AdminDashboard() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -132,6 +170,7 @@ function VehiclesTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(null);
 
   const loadVehicles = async () => {
     setLoading(true);
@@ -233,30 +272,48 @@ function VehiclesTab() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedVehicle?.vehicle?.id) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = (reader.result as string).split(",")[1];
-      try {
+    const input = e.currentTarget;
+    const files = Array.from(input.files ?? []);
+    input.value = "";
+    const vehicleId = selectedVehicle?.vehicle?.id;
+    const vehicleTitle = selectedVehicle?.vehicle?.title ?? "";
+    if (!files.length || !vehicleId) return;
+
+    let completed = 0;
+    setMsg(null);
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const position = index + 1;
+        setImageUploadStatus("Preparing image " + position + " of " + files.length + "…");
+        const image = await prepareAdminVehicleImage(file);
+        setImageUploadStatus("Uploading image " + position + " of " + files.length + "…");
         await adminUploadVehicleImage({
           data: {
-            vehicleId: selectedVehicle.vehicle.id,
-            fileName: file.name,
-            contentType: file.type,
-            base64Data: base64,
-            alt: selectedVehicle.vehicle.title,
+            vehicleId,
+            fileName: image.fileName,
+            contentType: image.contentType,
+            base64Data: image.base64Data,
+            alt: vehicleTitle || file.name,
           },
         });
-        const res = await adminGetVehicle({ data: selectedVehicle.vehicle.id });
-        setSelectedVehicle(res);
-      } catch (err: any) {
-        alert(err.message);
+        completed += 1;
       }
-    };
-    reader.readAsDataURL(file);
+      setMsg("Uploaded " + completed + " vehicle image" + (completed === 1 ? "" : "s") + ".");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Unknown upload error.";
+      setMsg(completed ? "Uploaded " + completed + " of " + files.length + " selected images. " + detail : detail);
+    } finally {
+      setImageUploadStatus(null);
+      try {
+        const res = await adminGetVehicle({ data: vehicleId });
+        setSelectedVehicle(res);
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : "Could not refresh the vehicle gallery.";
+        setMsg((current) => [current, detail].filter(Boolean).join(" "));
+      }
+    }
   };
-
   const handleDeleteImg = async (imgId: string) => {
     try {
       await adminDeleteVehicleImage({ data: imgId });
@@ -367,8 +424,9 @@ function VehiclesTab() {
               ))}
             </div>
             <div>
-              <label className="block text-xs uppercase text-muted font-medium mb-1">Upload New Image</label>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="text-sm" />
+              <label className="block text-xs uppercase text-muted font-medium mb-1">Upload Images</label>
+              <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} disabled={Boolean(imageUploadStatus)} className="text-sm disabled:opacity-60" />
+              {imageUploadStatus ? <p role="status" className="mt-2 text-xs text-muted">{imageUploadStatus}</p> : null}
             </div>
           </div>
         )}

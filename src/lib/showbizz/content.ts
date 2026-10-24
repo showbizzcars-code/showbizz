@@ -387,6 +387,69 @@ type HostCarImageInput = {
   base64Data: string;
 };
 
+function isHostCarPhotoStorageKey(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^(?:blob\/)?host-enquiries\/[0-9]+-[a-f0-9]{16}\.(?:jpg|png|webp)$/i.test(value);
+}
+
+async function cleanupHostCarPhotoKeys(keys: string[], reason: string): Promise<void> {
+  const { deleteImageFromStorage, recordPendingStorageCleanup } = await import("./storage.server.ts");
+  for (const storageKey of keys) {
+    try {
+      await deleteImageFromStorage(storageKey);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      try {
+        await recordPendingStorageCleanup(storageKey, reason + ": " + detail);
+      } catch {
+        // Keep cleanup best-effort without hiding the original submission result.
+      }
+    }
+  }
+}
+
+export const uploadHostCarPhoto = createServerFn({ method: "POST" })
+  .validator((input: unknown) => input)
+  .handler(async ({ data }): Promise<{ ok: true; storageKey: string } | { ok: false; error: string }> => {
+    const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
+    assertSameSiteRequest();
+    const raw = data as Partial<HostCarImageInput>;
+    if (typeof raw.fileName !== "string" || typeof raw.contentType !== "string" || typeof raw.base64Data !== "string") {
+      return { ok: false, error: "One of the vehicle photos could not be read. Please choose it again." };
+    }
+    if (!/^[a-zA-Z0-9 _().-]{1,120}$/.test(raw.fileName) || !/^[A-Za-z0-9+/]*={0,2}$/.test(raw.base64Data)) {
+      return { ok: false, error: "One of the vehicle photos has an invalid filename or encoding." };
+    }
+    try {
+      const buffer = Buffer.from(raw.base64Data, "base64");
+      const { validateImageInput, uploadImageToStorage } = await import("./storage.server.ts");
+      const validation = validateImageInput(raw.contentType, buffer.byteLength, buffer);
+      if (!validation.ok) return { ok: false, error: validation.error };
+      const stored = await uploadImageToStorage({
+        fileName: raw.fileName,
+        contentType: raw.contentType,
+        byteSize: buffer.byteLength,
+        buffer,
+        folder: "host-enquiries",
+      });
+      return { ok: true, storageKey: stored.storageKey };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : "Could not upload one of the vehicle photos." };
+    }
+  });
+
+export const discardHostCarPhotos = createServerFn({ method: "POST" })
+  .validator((input: unknown) => input)
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
+    assertSameSiteRequest();
+    if (!Array.isArray(data) || !data.every(isHostCarPhotoStorageKey)) {
+      return { ok: false };
+    }
+    await cleanupHostCarPhotoKeys(data, "Unsubmitted host-my-car photos");
+    return { ok: true };
+  });
+
 export const submitHostCarEnquiry = createServerFn({ method: "POST" })
   .validator((input: unknown) => input)
   .handler(async ({ data }): Promise<HostCarEnquiryResult> => {
@@ -394,37 +457,13 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
     assertSameSiteRequest();
 
     const payload = data as { formData?: unknown; images?: unknown };
+    const photoKeys = payload.images === undefined ? [] : payload.images;
+    if (!Array.isArray(photoKeys) || !photoKeys.every(isHostCarPhotoStorageKey)) {
+      return { ok: false, error: "One of the vehicle photos could not be verified. Please choose the photos again." };
+    }
     const parsed = parseEnquiry(payload.formData);
     if (!parsed.ok) return parsed;
     const input = parsed.value;
-
-    if (!Array.isArray(payload.images) || payload.images.length > 3) {
-      return { ok: false, error: "Please attach no more than 3 vehicle photos." };
-    }
-
-    const imageInputs: { fileName: string; contentType: string; buffer: Buffer }[] = [];
-    let totalBytes = 0;
-    try {
-      const { validateImageInput } = await import("./storage.server.ts");
-      for (const raw of payload.images as HostCarImageInput[]) {
-        if (!raw || typeof raw.fileName !== "string" || typeof raw.contentType !== "string" || typeof raw.base64Data !== "string") {
-          return { ok: false, error: "One of the vehicle photos could not be read. Please try again." };
-        }
-        if (!/^[a-zA-Z0-9 _().-]{1,120}$/.test(raw.fileName) || !/^[A-Za-z0-9+/]*={0,2}$/.test(raw.base64Data)) {
-          return { ok: false, error: "One of the vehicle photos has an invalid filename or encoding." };
-        }
-        const buffer = Buffer.from(raw.base64Data, "base64");
-        totalBytes += buffer.length;
-        if (totalBytes > 3 * 1024 * 1024) {
-          return { ok: false, error: "The compressed photos are too large. Please choose fewer or smaller images." };
-        }
-        const validation = validateImageInput(raw.contentType, buffer.byteLength, buffer);
-        if (!validation.ok) return { ok: false, error: validation.error };
-        imageInputs.push({ fileName: raw.fileName, contentType: raw.contentType, buffer });
-      }
-    } catch {
-      return { ok: false, error: "Could not validate the selected vehicle photos." };
-    }
 
     const sql = await sqlClient();
     const phoneCount = await sql<{ n: number }>`
@@ -458,45 +497,14 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
       }
     }
 
-    const uploaded: { storageKey: string; publicUrl: string | null }[] = [];
-    const cleanup = async () => {
-      const { deleteImageFromStorage, recordPendingStorageCleanup } = await import("./storage.server.ts");
-      for (const image of uploaded) {
-        try {
-          await deleteImageFromStorage(image.storageKey);
-        } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
-          try {
-            await recordPendingStorageCleanup(image.storageKey, "Host-my-car enquiry cleanup: " + reason);
-          } catch {
-            // Keep the original submission error; the pending cleanup attempt is best effort.
-          }
-        }
-      }
-    };
+    const photoLinks = photoKeys.map((key: string, index: number) =>
+      "Photo " + (index + 1) + ": " + (publicImageUrl(key) || ("Storage key: " + key))
+    );
+    const message = photoLinks.length
+      ? input.message + "\n\nVehicle photos:\n" + photoLinks.join("\n")
+      : input.message;
 
     try {
-      const { uploadImageToStorage } = await import("./storage.server.ts");
-      for (const image of imageInputs) {
-        const stored = await uploadImageToStorage({
-          fileName: image.fileName,
-          contentType: image.contentType,
-          byteSize: image.buffer.byteLength,
-          buffer: image.buffer,
-        });
-        uploaded.push({ storageKey: stored.storageKey, publicUrl: stored.publicUrl });
-      }
-
-      const message = uploaded.length
-        ? input.message + "\n\nVehicle photos:\n" + uploaded.map((image, index) =>
-            "Photo " + (index + 1) + ": " + (image.publicUrl || ("Storage key: " + image.storageKey))
-          ).join("\n")
-        : input.message;
-      if (message.length > 2000) {
-        await cleanup();
-        return { ok: false, error: "The vehicle details and photo links are too long. Remove a photo or shorten the additional information." };
-      }
-
       const id = crypto.randomUUID();
       await sql`
         insert into enquiry (
@@ -515,11 +523,10 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
         )
       `;
       const { logInfo } = await import("./log.server.ts");
-      logInfo("enquiry.created", { id, vehicleId: null, hasEmail: Boolean(input.email), attachmentCount: uploaded.length });
+      logInfo("enquiry.created", { id, vehicleId: null, hasEmail: Boolean(input.email), attachmentCount: photoKeys.length });
       return { ok: true, id, message };
     } catch {
-      await cleanup();
-      return { ok: false, error: "Could not submit the vehicle details or upload the photos. Please try again, or submit without photos." };
+      return { ok: false, error: "Could not submit the vehicle details. Your photos remain saved temporarily; please retry the form." };
     }
   });
 

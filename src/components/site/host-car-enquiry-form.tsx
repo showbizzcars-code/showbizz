@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { submitHostCarEnquiry } from "@/lib/showbizz/content";
+import { discardHostCarPhotos, submitHostCarEnquiry, uploadHostCarPhoto } from "@/lib/showbizz/content";
 
 const control =
   "mt-2 w-full rounded-control border border-line bg-bg px-3 py-3 text-ink outline-none focus:border-accent";
@@ -82,7 +82,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
   const [savedWhatsAppHref, setSavedWhatsAppHref] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [imageNotice, setImageNotice] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,10 +96,6 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
     const imageFiles = form.getAll("vehicleImages").filter(
       (value): value is File => value instanceof File && value.size > 0,
     );
-    if (imageFiles.length > 3) {
-      setError("Please attach no more than 3 vehicle photos.");
-      return;
-    }
 
     const vehicleDetails = [
       ["Brand & Model", form.get("vehicleMakeModel")],
@@ -117,10 +113,22 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
       ...vehicleDetails.map(([label, value]) => label + ": " + value),
     ].join("\n");
 
+    const uploadedPhotoKeys: string[] = [];
     setPending(true);
     setError(null);
+    setUploadStatus(null);
     try {
-      const images = await Promise.all(imageFiles.map(prepareVehicleImage));
+      for (let index = 0; index < imageFiles.length; index += 1) {
+        const position = index + 1;
+        setUploadStatus("Preparing photo " + position + " of " + imageFiles.length + "…");
+        const image = await prepareVehicleImage(imageFiles[index]);
+        setUploadStatus("Uploading photo " + position + " of " + imageFiles.length + "…");
+        const upload = await uploadHostCarPhoto({ data: image });
+        if (!upload.ok) throw new Error("Photo " + position + ": " + upload.error);
+        uploadedPhotoKeys.push(upload.storageKey);
+      }
+
+      setUploadStatus("Saving your vehicle details…");
       const result = await submitHostCarEnquiry({
         data: {
           formData: {
@@ -131,26 +139,33 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             vehicleSlug: "",
             companyWebsite: String(form.get("companyWebsite") ?? ""),
           },
-          images,
+          images: uploadedPhotoKeys,
         },
       });
       if (!result.ok) {
+        if (uploadedPhotoKeys.length) {
+          try { await discardHostCarPhotos({ data: uploadedPhotoKeys }); } catch { /* Preserve the submission error. */ }
+        }
         setError(result.error);
-      } else {
-        setSavedWhatsAppHref(
-          whatsAppHref
-            ? leadWhatsAppHref(whatsAppHref, { ...details, message: result.message })
-            : null,
-        );
-        setDone(true);
+        return;
       }
+
+      setSavedWhatsAppHref(
+        whatsAppHref
+          ? leadWhatsAppHref(whatsAppHref, { ...details, message })
+          : null,
+      );
+      setDone(true);
     } catch (err) {
+      if (uploadedPhotoKeys.length) {
+        try { await discardHostCarPhotos({ data: uploadedPhotoKeys }); } catch { /* Preserve the upload error. */ }
+      }
       setError(err instanceof Error ? err.message : "Could not submit your vehicle details.");
     } finally {
       setPending(false);
+      setUploadStatus(null);
     }
   }
-
   if (done) {
     return (
       <div className="rounded-card border border-line bg-surface p-6 sm:p-8" role="status">
@@ -165,7 +180,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             <a href={savedWhatsAppHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-accent-fg">
               Continue to WhatsApp <span className="ml-2" aria-hidden="true">↗</span>
             </a>
-            <p className="mt-2 text-xs text-muted">Review the prefilled details and photo links, then tap Send in WhatsApp.</p>
+            <p className="mt-2 text-xs text-muted">Review the prefilled details, then tap Send in WhatsApp. Your uploaded photos are already saved with the enquiry for our team.</p>
           </div>
         ) : (
           <p className="mt-5 text-sm text-muted">WhatsApp is not configured yet. The team can follow up using the contact details you provided.</p>
@@ -222,7 +237,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
         <label className="text-sm font-medium">State of Registration
           <input name="registrationState" required maxLength={100} placeholder="e.g. Karnataka" className={control} />
         </label>
-        <label className="text-sm font-medium sm:col-span-2">Vehicle Photos <span className="font-normal text-muted">(optional, up to 3 images)</span>
+        <label className="text-sm font-medium sm:col-span-2">Vehicle Photos <span className="font-normal text-muted">(optional)</span>
           <input
             name="vehicleImages"
             type="file"
@@ -230,36 +245,22 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             className={control + " file:mr-3 file:rounded-control file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-semibold file:text-accent-fg"}
             onChange={(event) => {
-              const input = event.currentTarget;
-              const files = Array.from(input.files ?? []);
-              const allowedFiles = files.slice(0, 3);
-
-              // Keep the actual FileList in sync with the three-image UI limit.
-              // Updating only the displayed filenames leaves extra files in FormData.
-              if (files.length > 3) {
-                const transfer = new DataTransfer();
-                allowedFiles.forEach((file) => transfer.items.add(file));
-                input.files = transfer.files;
-                setImageNotice(`You selected ${files.length} photos. Only the first 3 were kept.`);
-              } else {
-                setImageNotice(null);
-              }
-
-              setSelectedImages(allowedFiles.map((file) => file.name));
+              const files = Array.from(event.currentTarget.files ?? []);
+              setSelectedImages(files.map((file) => file.name));
               setError(null);
             }}
           />
-          <span className="mt-2 block text-xs font-normal leading-5 text-muted">JPEG, PNG or WebP. Photos are resized before upload; up to 3 images can be attached.</span>
+          <span className="mt-2 block text-xs font-normal leading-5 text-muted">JPEG, PNG or WebP. Photos are resized before upload. Add as many images as you need.</span>
           {selectedImages.length > 0 ? <span className="mt-2 block text-xs font-normal text-muted">Selected: {selectedImages.join(", ")}</span> : null}
-          {imageNotice ? <span role="status" className="mt-2 block text-xs font-normal text-muted">{imageNotice}</span> : null}
         </label>
         <label className="text-sm font-medium sm:col-span-2">Additional information <span className="font-normal text-muted">(optional)</span>
           <textarea name="additionalInfo" rows={3} maxLength={1000} placeholder="Anything else we should know?" className={control} />
         </label>
       </div>
+      {uploadStatus ? <p role="status" className="mt-4 text-sm text-muted">{uploadStatus}</p> : null}
       {error ? <p role="alert" className="mt-4 text-sm text-danger">{error}</p> : null}
       <button type="submit" disabled={pending} className="mt-6 inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-accent-fg disabled:cursor-wait disabled:opacity-60">
-        {pending ? "Submitting…" : "Submit vehicle details"}
+        {pending ? uploadStatus || "Submitting…" : "Submit vehicle details"}
       </button>
       <p className="mt-4 text-xs leading-5 text-muted">
         Rental income is not guaranteed by submitting a vehicle. Insurance coverage, permitted use, maintenance, operating costs and vehicle-return conditions must be agreed and verified before onboarding.

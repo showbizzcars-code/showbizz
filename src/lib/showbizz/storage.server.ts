@@ -6,6 +6,8 @@ export type ImageUploadInput = {
   contentType: string;
   byteSize: number;
   buffer: Buffer;
+  /** Separates temporary public vehicle-owner uploads from staff-managed vehicle gallery images. */
+  folder?: "vehicles" | "host-enquiries";
 };
 
 export type StoredImageResult = {
@@ -57,10 +59,14 @@ export function validateImageInput(
   return { ok: true };
 }
 
-export function generateStorageKey(fileName: string, contentType: string): string {
+export function generateStorageKey(
+  fileName: string,
+  contentType: string,
+  folder: "vehicles" | "host-enquiries" = "vehicles",
+): string {
   const ext = contentType === "image/jpeg" ? "jpg" : contentType === "image/png" ? "png" : "webp";
   const hash = createHash("sha256").update(fileName + randomBytes(16).toString("hex") + Date.now()).digest("hex").slice(0, 16);
-  return `vehicles/${Date.now()}-${hash}.${ext}`;
+  return `${folder}/${Date.now()}-${hash}.${ext}`;
 }
 
 function hmac(key: Buffer | string, data: string): Buffer {
@@ -216,7 +222,7 @@ export async function uploadImageToStorage(input: ImageUploadInput): Promise<Sto
   const validation = validateImageInput(input.contentType, input.byteSize, input.buffer);
   if (!validation.ok) throw new Error(validation.error);
 
-  const storageKey = generateStorageKey(input.fileName, input.contentType);
+  const storageKey = generateStorageKey(input.fileName, input.contentType, input.folder);
   const endpoint = process.env.S3_ENDPOINT?.trim();
   const bucket = process.env.S3_BUCKET?.trim();
   const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
