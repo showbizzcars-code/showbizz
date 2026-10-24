@@ -212,26 +212,6 @@ async function deleteFromVercelBlob(storageKey: string): Promise<void> {
     throw new Error("Vercel Blob delete failed with status " + response.status + code + ".");
   }
 }
-/** One-off storage smoke test: uploads a tiny PNG, fetches its public URL, verifies byte equality, then deletes it. */
-export async function verifyVercelBlobStorage(): Promise<{ uploaded: true; publicRead: true; deleted: true }> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (!token || !blobStoreIdFromReadWriteToken(token)) throw new Error("Vercel Blob storage is not configured or token is invalid.");
-  const buffer = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/ZD8AAAAASUVORK5CYII=", "base64");
-  const storageKey = "blob/healthcheck/" + Date.now() + "-" + randomBytes(8).toString("hex") + ".png";
-  const result = await uploadToVercelBlob(storageKey, { fileName: "storage-health.png", contentType: "image/png", byteSize: buffer.byteLength, buffer });
-  try {
-    const response = await fetch(result.url, { cache: "no-store" });
-    if (!response.ok) throw new Error("Vercel Blob public read failed with status " + response.status + ".");
-    const downloaded = Buffer.from(await response.arrayBuffer());
-    if (!downloaded.equals(buffer)) throw new Error("Vercel Blob returned different image bytes.");
-    await deleteFromVercelBlob(storageKey);
-    return { uploaded: true, publicRead: true, deleted: true };
-  } catch (error) {
-    try { await deleteFromVercelBlob(storageKey); } catch { /* Best-effort cleanup while preserving the real error. */ }
-    throw error;
-  }
-}
-
 export async function uploadImageToStorage(input: ImageUploadInput): Promise<StoredImageResult> {
   const validation = validateImageInput(input.contentType, input.byteSize, input.buffer);
   if (!validation.ok) throw new Error(validation.error);
