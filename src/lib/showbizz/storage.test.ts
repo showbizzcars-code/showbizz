@@ -39,11 +39,16 @@ test("Vercel Blob read-write tokens resolve the store ID and reject malformed to
   assert.equal(blobStoreIdFromReadWriteToken("vercel_blob_ro_store_id_secret"), null);
 });
 
-test("generateStorageKey outputs expected format without directory traversal", () => {
-  const key = generateStorageKey("../test.png", "image/png");
-  assert.ok(key.startsWith("vehicles/"));
-  assert.ok(key.endsWith(".png"));
-  assert.ok(!key.includes(".."));
+test("generateStorageKey supports vehicle galleries and vehicle-owner enquiry photos without directory traversal", () => {
+  const vehicleKey = generateStorageKey("../test.png", "image/png");
+  assert.ok(vehicleKey.startsWith("vehicles/"));
+  assert.ok(vehicleKey.endsWith(".png"));
+  assert.ok(!vehicleKey.includes(".."));
+
+  const enquiryKey = generateStorageKey("owner-photo.webp", "image/webp", "host-enquiries");
+  assert.ok(enquiryKey.startsWith("host-enquiries/"));
+  assert.ok(enquiryKey.endsWith(".webp"));
+  assert.ok(!enquiryKey.includes(".."));
 });
 
 test("signS3Request generates AWS SigV4 Authorization header with default us-east-1 or configured region", () => {
