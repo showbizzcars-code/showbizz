@@ -387,9 +387,35 @@ type HostCarImageInput = {
   base64Data: string;
 };
 
+type HostCarUploadedPhoto = {
+  storageKey: string;
+  contentType: string;
+  byteSize: number;
+  alt: string;
+};
+
+type HostCarVehicleInput = {
+  title: string;
+  modelYear: number;
+  fuel: string;
+  transmission: "automatic" | "manual";
+  currentKilometres: number;
+  registrationState: string;
+  additionalInfo: string;
+};
+
 function isHostCarPhotoStorageKey(value: unknown): value is string {
   return typeof value === "string" &&
     /^(?:blob\/)?host-enquiries\/[0-9]+-[a-f0-9]{16}\.(?:jpg|png|webp)$/i.test(value);
+}
+
+function isHostCarUploadedPhoto(value: unknown): value is HostCarUploadedPhoto {
+  if (!value || typeof value !== "object") return false;
+  const photo = value as Partial<HostCarUploadedPhoto>;
+  return isHostCarPhotoStorageKey(photo.storageKey) &&
+    ["image/jpeg", "image/png", "image/webp"].includes(String(photo.contentType)) &&
+    Number.isSafeInteger(photo.byteSize) && Number(photo.byteSize) > 0 && Number(photo.byteSize) <= 3 * 1024 * 1024 &&
+    typeof photo.alt === "string" && photo.alt.length >= 1 && photo.alt.length <= 180;
 }
 
 async function cleanupHostCarPhotoKeys(keys: string[], reason: string): Promise<void> {
@@ -410,7 +436,7 @@ async function cleanupHostCarPhotoKeys(keys: string[], reason: string): Promise<
 
 export const uploadHostCarPhoto = createServerFn({ method: "POST" })
   .validator((input: unknown) => input)
-  .handler(async ({ data }): Promise<{ ok: true; storageKey: string } | { ok: false; error: string }> => {
+  .handler(async ({ data }): Promise<{ ok: true; storageKey: string; contentType: string; byteSize: number; alt: string } | { ok: false; error: string }> => {
     const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
     assertSameSiteRequest();
     const raw = data as Partial<HostCarImageInput>;
@@ -432,7 +458,13 @@ export const uploadHostCarPhoto = createServerFn({ method: "POST" })
         buffer,
         folder: "host-enquiries",
       });
-      return { ok: true, storageKey: stored.storageKey };
+      return {
+        ok: true,
+        storageKey: stored.storageKey,
+        contentType: stored.contentType,
+        byteSize: stored.byteSize,
+        alt: raw.fileName.replace(/\.webp$/i, "").slice(0, 180) || "Vehicle photo",
+      };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : "Could not upload one of the vehicle photos." };
     }
@@ -456,15 +488,37 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
     const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
     assertSameSiteRequest();
 
-    const payload = data as { formData?: unknown; images?: unknown };
-    const photoKeys = payload.images === undefined ? [] : payload.images;
-    if (!Array.isArray(photoKeys) || !photoKeys.every(isHostCarPhotoStorageKey)) {
+    const payload = data as { formData?: unknown; images?: unknown; vehicle?: unknown };
+    const photos = payload.images === undefined ? [] : payload.images;
+    if (!Array.isArray(photos) || !photos.every(isHostCarUploadedPhoto)) {
       return { ok: false, error: "One of the vehicle photos could not be verified. Please choose the photos again." };
     }
+    const vehicleData = payload.vehicle as Partial<HostCarVehicleInput> | undefined;
+    if (!vehicleData || typeof vehicleData.title !== "string" || vehicleData.title.trim().length < 1 || vehicleData.title.trim().length > 120) {
+      return { ok: false, error: "Enter a vehicle make and model between 1 and 120 characters." };
+    }
+    if (!Number.isInteger(vehicleData.modelYear) || Number(vehicleData.modelYear) < 1980 || Number(vehicleData.modelYear) > 2100) {
+      return { ok: false, error: "Enter a valid year of manufacture." };
+    }
+    if (typeof vehicleData.fuel !== "string" || vehicleData.fuel.length < 1 || vehicleData.fuel.length > 40) {
+      return { ok: false, error: "Select a valid fuel type." };
+    }
+    if (vehicleData.transmission !== "automatic" && vehicleData.transmission !== "manual") {
+      return { ok: false, error: "Select a valid transmission type." };
+    }
+    if (!Number.isSafeInteger(vehicleData.currentKilometres) || Number(vehicleData.currentKilometres) < 0) {
+      return { ok: false, error: "Enter a valid odometer reading." };
+    }
+    if (typeof vehicleData.registrationState !== "string" || vehicleData.registrationState.trim().length < 1 || vehicleData.registrationState.length > 100) {
+      return { ok: false, error: "Enter the state of registration." };
+    }
+    if (typeof vehicleData.additionalInfo !== "string" || vehicleData.additionalInfo.length > 1000) {
+      return { ok: false, error: "Additional information is too long." };
+    }
+
     const parsed = parseEnquiry(payload.formData);
     if (!parsed.ok) return parsed;
     const input = parsed.value;
-
     const sql = await sqlClient();
     const phoneCount = await sql<{ n: number }>`
       select count(*) as n from enquiry
@@ -497,36 +551,65 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
       }
     }
 
-    const photoLinks = photoKeys.map((key: string, index: number) =>
-      "Photo " + (index + 1) + ": " + (publicImageUrl(key) || ("Storage key: " + key))
-    );
-    const message = photoLinks.length
-      ? input.message + "\n\nVehicle photos:\n" + photoLinks.join("\n")
-      : input.message;
+    const title = vehicleData.title.trim();
+    const modelYear = Number(vehicleData.modelYear);
+    const vehicleId = crypto.randomUUID();
+    const enquiryId = crypto.randomUUID();
+    const slugBase = title.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "hosted-car";
+    const vehicleSlug = slugBase + "-" + vehicleId.replace(/-/g, "").slice(0, 10);
+    const vehicleDescription = [
+      "Owner-submitted vehicle awaiting staff review.",
+      "Year of manufacture: " + modelYear,
+      "Fuel type: " + vehicleData.fuel,
+      "Transmission: " + (vehicleData.transmission === "automatic" ? "Automatic" : "Manual"),
+      "Current odometer: " + vehicleData.currentKilometres + " km",
+      "State of registration: " + vehicleData.registrationState.trim(),
+      vehicleData.additionalInfo.trim() ? "Additional information: " + vehicleData.additionalInfo.trim() : "",
+    ].filter(Boolean).join("\n");
 
     try {
-      const id = crypto.randomUUID();
-      await sql`
-        insert into enquiry (
-          id, vehicle_id, contact_name, phone, email, message, start_on, end_on, status, ip_hash
-        ) values (
-          ${id},
-          null,
-          ${input.contactName},
-          ${input.phone},
-          ${input.email || null},
-          ${message},
-          null,
-          null,
-          'new',
-          ${ipHash}
-        )
-      `;
+      await sql.transaction(async (tx) => {
+        await tx`
+          insert into vehicle (
+            id, slug, title, summary, description, model_year, transmission, fuel,
+            availability, status, created_by, updated_by, published_at
+          ) values (
+            ${vehicleId}, ${vehicleSlug}, ${title},
+            ${"Owner-submitted vehicle awaiting staff review."}, ${vehicleDescription},
+            ${modelYear}, ${vehicleData.transmission}, ${vehicleData.fuel.trim()},
+            'on_request', 'draft', 'public-host-my-car-submission', null, null
+          )
+        `;
+
+        for (let index = 0; index < photos.length; index += 1) {
+          const photo = photos[index] as HostCarUploadedPhoto;
+          await tx`
+            insert into vehicle_image (
+              id, vehicle_id, storage_key, alt, sort_order, content_type, byte_size
+            ) values (
+              ${crypto.randomUUID()}, ${vehicleId}, ${photo.storageKey}, ${photo.alt || (title + " photo " + (index + 1))},
+              ${index}, ${photo.contentType}, ${photo.byteSize}
+            )
+          `;
+        }
+
+        await tx`
+          insert into enquiry (
+            id, vehicle_id, contact_name, phone, email, message, start_on, end_on, status, ip_hash
+          ) values (
+            ${enquiryId}, ${vehicleId}, ${input.contactName}, ${input.phone}, ${input.email || null},
+            ${input.message}, null, null, 'new', ${ipHash}
+          )
+        `;
+      });
+
       const { logInfo } = await import("./log.server.ts");
-      logInfo("enquiry.created", { id, vehicleId: null, hasEmail: Boolean(input.email), attachmentCount: photoKeys.length });
-      return { ok: true, id, message };
-    } catch {
-      return { ok: false, error: "Could not submit the vehicle details. Your photos remain saved temporarily; please retry the form." };
+      logInfo("host_car_submission.created", { enquiryId, vehicleId, photoCount: photos.length, hasEmail: Boolean(input.email) });
+      return { ok: true, id: enquiryId, message: input.message };
+    } catch (error) {
+      const { logError } = await import("./log.server.ts");
+      logError("host_car_submission.failed", { reason: error instanceof Error ? error.message : "unknown", photoCount: photos.length });
+      return { ok: false, error: "Could not save the vehicle submission. Please retry; your uploaded photos will be cleaned up." };
     }
   });
 
