@@ -82,6 +82,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
   const [savedWhatsAppHref, setSavedWhatsAppHref] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [imageNotice, setImageNotice] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -229,13 +230,28 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             className={control + " file:mr-3 file:rounded-control file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-semibold file:text-accent-fg"}
             onChange={(event) => {
-              const files = Array.from(event.currentTarget.files ?? []);
-              setSelectedImages(files.slice(0, 3).map((file) => file.name));
-              setError(files.length > 3 ? "Please attach no more than 3 vehicle photos." : null);
+              const input = event.currentTarget;
+              const files = Array.from(input.files ?? []);
+              const allowedFiles = files.slice(0, 3);
+
+              // Keep the actual FileList in sync with the three-image UI limit.
+              // Updating only the displayed filenames leaves extra files in FormData.
+              if (files.length > 3) {
+                const transfer = new DataTransfer();
+                allowedFiles.forEach((file) => transfer.items.add(file));
+                input.files = transfer.files;
+                setImageNotice(`You selected ${files.length} photos. Only the first 3 were kept.`);
+              } else {
+                setImageNotice(null);
+              }
+
+              setSelectedImages(allowedFiles.map((file) => file.name));
+              setError(null);
             }}
           />
           <span className="mt-2 block text-xs font-normal leading-5 text-muted">JPEG, PNG or WebP. Photos are resized before upload; up to 3 images can be attached.</span>
           {selectedImages.length > 0 ? <span className="mt-2 block text-xs font-normal text-muted">Selected: {selectedImages.join(", ")}</span> : null}
+          {imageNotice ? <span role="status" className="mt-2 block text-xs font-normal text-muted">{imageNotice}</span> : null}
         </label>
         <label className="text-sm font-medium sm:col-span-2">Additional information <span className="font-normal text-muted">(optional)</span>
           <textarea name="additionalInfo" rows={3} maxLength={1000} placeholder="Anything else we should know?" className={control} />
