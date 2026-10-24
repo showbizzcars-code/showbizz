@@ -4,7 +4,6 @@ import { isStaffRole, can, type StaffRole, type StaffAction } from "./access.ts"
 import { uploadImageToStorage, deleteImageFromStorage, recordPendingStorageCleanup } from "./storage.server.ts";
 import { parseSlug } from "./validate.ts";
 import { PUBLIC_SETTING_KEYS } from "./brand.ts";
-import { CLIENT_CAR_CATALOG } from "./client-cars.ts";
 
 async function sqlClient() {
   const { getSql } = await import("../db.ts");
@@ -177,72 +176,6 @@ export const adminSaveVehicle = createServerFn({ method: "POST" })
     }
 
     return { ok: true, id };
-  });
-
-export const adminAddClientCarCatalog = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
-  .handler(async ({ context }) => {
-    await requirePermission(context.userId, "vehicle.write");
-    const sql = await sqlClient();
-    const models = CLIENT_CAR_CATALOG;
-
-    let inserted = 0;
-    let existing = 0;
-    await sql.transaction(async (tx) => {
-      for (const model of models) {
-        const prior = await tx<{ id: string }>`
-          select id from vehicle where slug = ${model.slug} limit 1
-        `;
-        if (prior[0]) {
-          // Align only the client-specified model label. Preserve every other field
-          // entered by staff: status, description, photos, specifications and price.
-          await tx`
-            update vehicle
-            set title = ${model.title}, updated_by = ${context.userId}, updated_at = now()
-            where id = ${prior[0].id}
-          `;
-          existing += 1;
-          continue;
-        }
-
-        const rows = await tx<{ id: string }>`
-          insert into vehicle (
-            id, slug, title, summary, description, availability,
-            availability_note, status, created_by, updated_by, published_at
-          ) values (
-            ${crypto.randomUUID()},
-            ${model.slug},
-            ${model.title},
-            'Ask our team about monthly subscription pricing and vehicle details.',
-            'Client-requested model listing. Specifications, photographs, pricing, rental terms and current availability have not been supplied yet.',
-            'on_request',
-            'Pricing and current availability are confirmed by our team.',
-            'published',
-            ${context.userId},
-            ${context.userId},
-            now()
-          )
-          on conflict (slug) do nothing
-          returning id
-        `;
-        if (rows.length > 0) {
-          inserted += 1;
-        } else {
-          const raced = await tx<{ id: string }>`
-            select id from vehicle where slug = ${model.slug} limit 1
-          `;
-          if (raced[0]) {
-            await tx`
-              update vehicle
-              set title = ${model.title}, updated_by = ${context.userId}, updated_at = now()
-              where id = ${raced[0].id}
-            `;
-          }
-          existing += 1;
-        }
-      }
-    });
-    return { inserted, existing, total: models.length };
   });
 
 export const adminDeleteVehicle = createServerFn({ method: "POST" })
