@@ -9,12 +9,13 @@ import { formatDailyRate } from "./money.ts";
 import {
   availabilityLd,
   buildRobotsTxt,
+  documentHead,
   buildSitemapXml,
   metaDescription,
   rentalBusinessLd,
   xmlEscape,
 } from "./seo.ts";
-import { DEFAULT_WHATSAPP_E164, httpsUrl, publicSettingsFromRows, whatsAppHref } from "./settings.ts";
+import { DEFAULT_BUSINESS_ADDRESS, DEFAULT_WHATSAPP_E164, httpsUrl, publicSettingsFromRows, whatsAppHref } from "./settings.ts";
 import {
   PUBLIC_FAQ_SQL,
   PUBLIC_POST_LIST_SQL,
@@ -148,6 +149,8 @@ test("money, WhatsApp helpers, and default business WhatsApp settings are consis
   assert.equal(settings.publicEmail, null);
   assert.equal(settings.whatsappE164, DEFAULT_WHATSAPP_E164);
   assert.equal(publicSettingsFromRows([]).whatsappE164, DEFAULT_WHATSAPP_E164);
+  assert.equal(publicSettingsFromRows([]).address, DEFAULT_BUSINESS_ADDRESS);
+  assert.equal(publicSettingsFromRows([{ key: "address", value: "   " }]).address, DEFAULT_BUSINESS_ADDRESS);
   assert.equal(
     publicSettingsFromRows([{ key: "whatsapp_e164", value: "+447700900123" }]).whatsappE164,
     "+447700900123",
@@ -166,6 +169,10 @@ test("sitemap and robots stay crawlable and credential-free", () => {
   assert.match(robots, /Disallow: \/admin/);
   assert.doesNotMatch(robots, /Disallow: \/\n/);
   assert.throws(() => buildSitemapXml("https://user:pass@example.com", [{ loc: "/" }]));
+  const homeHead = documentHead({ title: "Showbizz Cars", description: "Cars by Showbizz Cars", path: "/" });
+  assert.equal(homeHead.links[0]?.href, "https://www.showbizzcars.com/");
+  const vehiclesHead = documentHead({ title: "Cars", description: "Browse cars", path: "/vehicles" });
+  assert.equal(vehiclesHead.links[0]?.href, "https://www.showbizzcars.com/vehicles");
   const business = rentalBusinessLd(null, {
     publicPhone: null,
     publicEmail: null,
