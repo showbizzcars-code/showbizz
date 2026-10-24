@@ -187,7 +187,7 @@ async function uploadToVercelBlob(pathname: string, input: ImageUploadInput): Pr
     throw new Error("Vercel Blob upload returned an invalid response.");
   }
   const publicUrl = new URL(data.url);
-  if (publicUrl.protocol !== "https:" || publicUrl.hostname !== storeId + ".public.blob.vercel-storage.com") {
+  if (publicUrl.protocol !== "https:" || publicUrl.hostname.toLowerCase() !== (storeId + ".public.blob.vercel-storage.com").toLowerCase()) {
     throw new Error("Vercel Blob returned a URL outside the configured public image store.");
   }
   return { url: publicUrl.toString(), pathname: data.pathname };
