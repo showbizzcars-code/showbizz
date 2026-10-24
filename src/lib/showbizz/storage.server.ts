@@ -348,27 +348,26 @@ export async function deleteImageFromStorage(storageKey: string): Promise<void> 
     throw new Error("Invalid storage key format.");
   }
 
+  if (storageKey.startsWith("blob/")) {
+    await deleteFromVercelBlob(storageKey);
+    return;
+  }
+
   const endpoint = process.env.S3_ENDPOINT?.trim();
   const bucket = process.env.S3_BUCKET?.trim();
   const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
-
   const isS3Configured = Boolean(endpoint && bucket && accessKeyId && secretAccessKey);
-  const isPartialS3 = Boolean(
-    (endpoint || bucket || accessKeyId || secretAccessKey) && !isS3Configured
-  );
+  const isPartialS3 = Boolean((endpoint || bucket || accessKeyId || secretAccessKey) && !isS3Configured);
 
   if (isPartialS3) {
-    throw new Error(
-      "Partial S3 configuration detected. All four settings (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY) must be provided."
-    );
+    throw new Error("Partial S3 configuration detected. All four settings (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY) must be provided.");
   }
 
   if (isS3Configured) {
     const cleanEndpoint = endpoint!.replace(/\/+$/, "");
-    const deleteUrl = `${cleanEndpoint}/${bucket}/${storageKey}`;
+    const deleteUrl = cleanEndpoint + "/" + bucket + "/" + storageKey;
     const payloadHash = sha256("");
-
     const signedHeaders = signS3Request({
       method: "DELETE",
       url: deleteUrl,
@@ -377,27 +376,17 @@ export async function deleteImageFromStorage(storageKey: string): Promise<void> 
       headers: {},
       payloadHash,
     });
-
-    const response = await fetch(deleteUrl, {
-      method: "DELETE",
-      headers: signedHeaders,
-    });
-
-    if (!response.ok && response.status !== 404) {
-      throw new Error(`S3 delete failed with status ${response.status}`);
-    }
-  } else {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "S3 object storage is not configured for production image persistence. Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY in environment variables."
-      );
-    }
-    const isMockAllowed = process.env.ALLOW_MOCK_STORAGE === "true" || process.env.NODE_ENV === "test";
-    if (!isMockAllowed) {
-      throw new Error(
-        "S3 object storage is not configured. Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY in environment variables or set ALLOW_MOCK_STORAGE=true for local development."
-      );
-    }
-    console.log(`[Storage] Local/Mock storage deleted key: ${storageKey}`);
+    const response = await fetch(deleteUrl, { method: "DELETE", headers: signedHeaders });
+    if (!response.ok && response.status !== 404) throw new Error("S3 delete failed with status " + response.status);
+    return;
   }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Real image storage is not configured for production deletion. Connect Vercel Blob or configure all required S3 storage variables.");
+  }
+  const isMockAllowed = process.env.ALLOW_MOCK_STORAGE === "true" || process.env.NODE_ENV === "test";
+  if (!isMockAllowed) {
+    throw new Error("Image storage is not configured. Connect Vercel Blob, configure S3 variables, or enable the explicit local-only test mock.");
+  }
+  console.log("[Storage] Local/Mock storage deleted key: " + storageKey);
 }
