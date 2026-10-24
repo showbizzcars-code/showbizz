@@ -31,6 +31,44 @@ export const Route = createFileRoute("/admin/")({
 
 type Tab = "overview" | "vehicles" | "enquiries" | "posts" | "faqs" | "testimonials" | "settings";
 
+type PreparedAdminVehicleImage = {
+  fileName: string;
+  contentType: "image/webp";
+  base64Data: string;
+};
+
+async function prepareAdminVehicleImage(file: File): Promise<PreparedAdminVehicleImage> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("Please select JPEG, PNG, or WebP vehicle photos.");
+  }
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) { bitmap.close(); throw new Error("Could not process " + file.name + "."); }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  let blob: Blob | null = null;
+  for (const quality of [0.84, 0.76, 0.68, 0.58, 0.48]) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+    if (blob && blob.size <= 850 * 1024) break;
+  }
+  if (!blob || blob.size > 1024 * 1024) {
+    throw new Error(file.name + " could not be compressed below 1 MB. Please choose a smaller image.");
+  }
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read " + file.name + "."));
+    reader.readAsDataURL(blob!);
+  });
+  const safeName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9 _().-]/g, "").trim().slice(0, 80) || "vehicle-photo";
+  return { fileName: safeName + ".webp", contentType: "image/webp", base64Data: dataUrl.split(",")[1] || "" };
+}
+
+
 function AdminDashboard() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -132,6 +170,7 @@ function VehiclesTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(null);
 
   const loadVehicles = async () => {
     setLoading(true);
