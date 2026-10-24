@@ -39,8 +39,6 @@ export type PublicVehicleCard = {
   availabilityNote: string | null;
   dailyRateLabel: string | null;
   price: { currency: string; amount: string } | null;
-  /** True only for a client-listed model awaiting an authorised inventory record. */
-  catalogOnly?: boolean;
 };
 
 export type PublicVehicleImage = {
