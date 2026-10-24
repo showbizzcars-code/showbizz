@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/host-car-audit")({
     const supplied = url.searchParams.get("token") ?? "";
     const matches = expected.length > 0 && Buffer.byteLength(expected) === Buffer.byteLength(supplied) && timingSafeEqual(Buffer.from(expected), Buffer.from(supplied));
     if (process.env.VERCEL_ENV !== "preview" || !matches) return new Response("Not found", { status: 404 });
-    if (url.searchParams.get("mode") !== "migrate") return Response.json({ ok: false, error: "Set mode=migrate to repair legacy submissions." }, { status: 400 });
+    if (!["migrate", "diagnose"].includes(url.searchParams.get("mode") ?? "")) return Response.json({ ok: false, error: "Set mode=migrate or mode=diagnose." }, { status: 400 });
 
     const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() ?? "";
     const storeId = blobStoreIdFromReadWriteToken(token);
@@ -25,6 +25,36 @@ export const Route = createFileRoute("/api/host-car-audit")({
       "select id, message, created_at, vehicle_id from enquiry where message like $1 order by created_at asc",
       ["Vehicle partnership enquiry from the Host my car page.%"],
     );
+    if (url.searchParams.get("mode") === "diagnose") {
+      const report = [];
+      for (const row of rows) {
+        const lines = row.message.split("\n");
+        const photoLines = lines.filter((line) => line.startsWith("Photo ") && line.includes("https://"));
+        const photos = [];
+        for (const line of photoLines) {
+          const colon = line.indexOf(":");
+          if (colon < 0) { photos.push({ parse: "missing-colon" }); continue; }
+          const photoUrl = line.slice(colon + 1).trim();
+          let parsedUrl;
+          try { parsedUrl = new URL(photoUrl); } catch { photos.push({ parse: "invalid-url" }); continue; }
+          const storageKey = parsedUrl.pathname.split("/").filter(Boolean).map((part) => decodeURIComponent(part)).join("/");
+          const hostMatch = parsedUrl.protocol === "https:" && parsedUrl.hostname.toLowerCase() === expectedHost;
+          const keyMatch = isLegacyHostPhotoKey(storageKey);
+          if (!hostMatch || !keyMatch) { photos.push({ hostMatch, keyMatch, pathPrefix: storageKey.split("/").slice(0, 2).join("/") }); continue; }
+          try {
+            const response = await fetch(photoUrl, { cache: "no-store" });
+            const contentType = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+            const buffer = response.ok ? Buffer.from(await response.arrayBuffer()) : Buffer.alloc(0);
+            const validation = response.ok ? validateImageInput(contentType, buffer.byteLength, buffer) : { ok: false as const, error: "HTTP " + response.status };
+            photos.push({ hostMatch, keyMatch, httpStatus: response.status, contentType, byteSize: buffer.byteLength, imageValid: validation.ok, validationError: validation.ok ? null : validation.error });
+          } catch (error) {
+            photos.push({ hostMatch, keyMatch, fetchError: error instanceof Error ? error.message : "fetch failed" });
+          }
+        }
+        report.push({ enquiryId: row.id, linkedToVehicle: Boolean(row.vehicle_id), photoCount: photoLines.length, photos });
+      }
+      return Response.json({ ok: true, expectedHost, report });
+    }
     let migrated = 0;
     let linkedPhotos = 0;
     let skippedPhotos = 0;
