@@ -16,10 +16,13 @@ export const Route = createFileRoute("/api/host-car-audit")({
     );
     const pending = rows.filter((row) => !row.vehicle_id);
     const data = pending.map((row) => {
-      const title = row.message.match(/^Brand & Model:\\s*(.*)$/m)?.[1]?.trim() ?? "";
-      const year = Number(row.message.match(/^Year of Manufacture:\\s*(\\d{4})$/m)?.[1] ?? 0);
-      const photoCount = [...row.message.matchAll(/^Photo \\d+:\\s+https:\\/\\/[^\\s]+/gm)].length;
-      return { id: row.id, createdAt: row.created_at, title, year: year || null, photoCount };
+      const lines = row.message.split("\n");
+      const field = (label: string) => lines.find((line) => line.startsWith(label + ":"))?.slice(label.length + 1).trim() ?? "";
+      const title = field("Brand & Model");
+      const yearText = field("Year of Manufacture");
+      const year = Number(yearText);
+      const photoCount = lines.filter((line) => line.startsWith("Photo ") && line.includes("https://")).length;
+      return { id: row.id, createdAt: row.created_at, title, year: Number.isInteger(year) ? year : null, photoCount };
     });
     return Response.json({ totalHostCarSubmissions: rows.length, withoutVehicleRecord: pending.length, pending: data });
   } } },
