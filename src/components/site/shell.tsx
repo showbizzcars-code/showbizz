@@ -138,6 +138,17 @@ export function SiteShell({
             </ul>
           </div>
         </div>
+        <div className="border-t border-white/10 px-5 py-3 text-center text-xs text-[#9aa9bb]">
+          Powered by{" "}
+          <a
+            href="https://xconversion.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-[#c5d0df] transition hover:text-white"
+          >
+            XConversionLab
+          </a>
+        </div>
       </footer>
     </div>
   );
