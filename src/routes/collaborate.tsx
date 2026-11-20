@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PartnershipEnquiryForm } from "@/components/site/partnership-enquiry-forms";
+import { VehicleSalesEnquiryForm } from "@/components/site/vehicle-sales-enquiry-form";
 import { SiteShell } from "@/components/site/shell";
 import { DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getContactPage } from "@/lib/showbizz/content";
@@ -47,7 +48,7 @@ function CollaboratePage() {
             </div>
           </div>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-2">
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
             <a href="#car-business-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
               <p className="eyebrow">01 / Asset & fleet</p>
               <h2 className="mt-4 font-display text-3xl sm:text-4xl">Car Business Partnership</h2>
@@ -63,6 +64,14 @@ function CollaboratePage() {
                 For automotive creators, influencers, filmmakers, production houses, agencies and brands interested in campaigns, shoots or automotive experiences.
               </p>
               <span className="mt-7 inline-flex items-center text-sm font-semibold">Pitch a creative collaboration <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
+            </a>
+            <a href="#vehicle-sales-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
+              <p className="eyebrow">03 / Sales & referrals</p>
+              <h2 className="mt-4 font-display text-3xl sm:text-4xl">Promote a Car for Sale</h2>
+              <p className="mt-4 max-w-xl leading-7 text-muted">
+                For vehicle owners, authorised representatives and dealers who want to reach potential buyers through the Showbizz Cars network.
+              </p>
+              <span className="mt-7 inline-flex items-center text-sm font-semibold">Submit a vehicle for review <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
             </a>
           </div>
         </div>
@@ -81,6 +90,14 @@ function CollaboratePage() {
             <p>
               Any proposed revenue share or fixed rental arrangement depends on the final commercial model, vehicle suitability, demand, operating expenses and a signed agreement. No return, rental volume or income is guaranteed by making an enquiry.
             </p>
+            <a href="#vehicle-sales-partnership" aria-label="Have a car to sell? Promote your car through Showbizz Cars" className="mt-8 block overflow-hidden rounded-card border border-line shadow-[0_14px_45px_rgba(0,0,0,.24)] transition hover:border-accent/60">
+              <img
+                src="/vehicle-sales-promo.gif"
+                alt="Have a car to sell? Promote your vehicle through Showbizz Cars to reach potential buyers."
+                className="block h-auto w-full"
+                loading="lazy"
+              />
+            </a>
           </div>
         </div>
 
@@ -162,6 +179,24 @@ function CollaboratePage() {
             </p>
           </div>
           <PartnershipEnquiryForm kind="content" settings={data.settings} />
+        </div>
+      </section>
+
+      <section id="vehicle-sales-partnership" className="scroll-mt-28 border-y border-line bg-[linear-gradient(135deg,rgba(255,255,255,.025),transparent)]">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[.7fr_1.3fr] md:py-24">
+          <div>
+            <p className="eyebrow">03 / Vehicle sales & referral partnership</p>
+            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Have a car to sell? Let's help it find a buyer.</h2>
+            <p className="mt-5 leading-7 text-muted">
+              Owners, authorised representatives and dealers can share a vehicle with our team for review. Tell us the asking price, location and vehicle details so we can discuss suitable promotion and buyer referrals.
+            </p>
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-muted">
+              <li>• Share the vehicle details and a photo or listing link.</li>
+              <li>• The Showbizz Cars team reviews the submission and selling authority.</li>
+              <li>• Promotion and any referral commission are agreed before proceeding.</li>
+            </ul>
+          </div>
+          <VehicleSalesEnquiryForm settings={data.settings} />
         </div>
       </section>
 
