@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PartnershipEnquiryForm } from "@/components/site/partnership-enquiry-forms";
-import { VehicleSalesEnquiryForm } from "@/components/site/vehicle-sales-enquiry-form";
 import { SiteShell } from "@/components/site/shell";
 import { DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getContactPage } from "@/lib/showbizz/content";
@@ -12,7 +11,7 @@ export const Route = createFileRoute("/collaborate")({
     documentHead({
       title: "Collaborate With Showbizz Cars",
       description: metaDescription(
-        "Explore vehicle sales and referral partnerships, car business opportunities, or content, creator, film and brand collaborations with Showbizz Cars.",
+        "Explore car business partnerships, vehicle acquisition and revenue-sharing opportunities, or content, creator, film and brand collaborations with Showbizz Cars.",
         DEFAULT_DESCRIPTION,
       ),
       path: "/collaborate",
@@ -40,7 +39,7 @@ function CollaboratePage() {
             </div>
             <div className="max-w-xl border-l border-line pl-5 sm:pl-7">
               <p className="leading-7 text-muted">
-                Partner with Showbizz Cars to explore vehicle sales referrals, luxury vehicle rental opportunities, content collaborations and automotive business ventures.
+                Partner with Showbizz Cars to explore luxury vehicle rental opportunities, content collaborations and innovative automotive business ventures.
               </p>
               <p className="mt-4 text-sm leading-6 text-muted">
                 Choose the path that best describes your idea. Each form records the partnership type with your enquiry so the team can distinguish vehicle business proposals from creative opportunities.
@@ -48,7 +47,7 @@ function CollaboratePage() {
             </div>
           </div>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
+          <div className="mt-12 grid gap-4 md:grid-cols-2">
             <a href="#car-business-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
               <p className="eyebrow">01 / Asset & fleet</p>
               <h2 className="mt-4 font-display text-3xl sm:text-4xl">Car Business Partnership</h2>
@@ -64,14 +63,6 @@ function CollaboratePage() {
                 For automotive creators, influencers, filmmakers, production houses, agencies and brands interested in campaigns, shoots or automotive experiences.
               </p>
               <span className="mt-7 inline-flex items-center text-sm font-semibold">Pitch a creative collaboration <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
-            </a>
-            <a href="#vehicle-sales-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
-              <p className="eyebrow">03 / Sales & referrals</p>
-              <h2 className="mt-4 font-display text-3xl sm:text-4xl">Promote a Car for Sale</h2>
-              <p className="mt-4 max-w-xl leading-7 text-muted">
-                For vehicle owners, authorised representatives and dealers who want to reach potential buyers through the Showbizz Cars network.
-              </p>
-              <span className="mt-7 inline-flex items-center text-sm font-semibold">Submit a vehicle for review <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
             </a>
           </div>
         </div>
@@ -90,36 +81,6 @@ function CollaboratePage() {
             <p>
               Any proposed revenue share or fixed rental arrangement depends on the final commercial model, vehicle suitability, demand, operating expenses and a signed agreement. No return, rental volume or income is guaranteed by making an enquiry.
             </p>
-            <a
-              href="#vehicle-sales-partnership"
-              aria-label="Have a car to sell? Promote your car through Showbizz Cars"
-              className="group relative isolate mt-8 block min-h-[350px] overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_14px_45px_rgba(0,0,0,.32)] transition hover:border-[#d8b36c]"
-            >
-              <img
-                src="/showbizz-luxury-hero.webp"
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full object-cover opacity-50 transition duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,12,.96)_0%,rgba(5,8,12,.78)_52%,rgba(5,8,12,.18)_100%)]" />
-              <img
-                src="/vehicle-sales-shimmer.gif"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55"
-              />
-              <div className="relative z-10 flex min-h-[350px] flex-col items-start justify-end p-6 sm:p-7">
-                <p className="eyebrow text-[#e2c58e]">Vehicle sales & referrals</p>
-                <h3 className="mt-3 max-w-xs font-display text-3xl leading-tight text-white sm:text-4xl">Have a car to sell?</h3>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-white/75">
-                  Put your vehicle in front of potential buyers through the Showbizz Cars network.
-                </p>
-                <span className="mt-6 inline-flex min-h-11 items-center rounded-control border border-[#d8b36c]/70 bg-[#d8b36c] px-5 text-sm font-semibold text-[#15110a] transition group-hover:bg-[#f0d59d]">
-                  Promote Your Car <span className="ml-2" aria-hidden="true">↗</span>
-                </span>
-              </div>
-            </a>
           </div>
         </div>
 
@@ -156,6 +117,24 @@ function CollaboratePage() {
             <p className="mt-5 leading-7 text-muted">
               Share your indicative vehicle budget and preferred commercial structure. The team can review the enquiry and discuss next steps.
             </p>
+            <figure className="relative mt-8 aspect-[4/3] max-w-md overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_14px_45px_rgba(0,0,0,.28)]">
+              <img
+                src="/showbizz-luxury-hero.webp"
+                alt="Sample animated vehicle promotion visual"
+                className="absolute inset-0 h-full w-full object-cover opacity-70"
+                loading="lazy"
+              />
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#05080c]/80 via-transparent to-[#05080c]/20" />
+              <img
+                src="/vehicle-sales-shimmer.gif"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full object-fill"
+              />
+              <figcaption className="absolute bottom-4 left-5 text-xs font-semibold uppercase tracking-[.18em] text-white/80">
+                Sample vehicle promotion visual
+              </figcaption>
+            </figure>
           </div>
           <PartnershipEnquiryForm kind="car-business" settings={data.settings} />
         </div>
@@ -201,24 +180,6 @@ function CollaboratePage() {
             </p>
           </div>
           <PartnershipEnquiryForm kind="content" settings={data.settings} />
-        </div>
-      </section>
-
-      <section id="vehicle-sales-partnership" className="scroll-mt-28 border-y border-line bg-[linear-gradient(135deg,rgba(255,255,255,.025),transparent)]">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[.7fr_1.3fr] md:py-24">
-          <div>
-            <p className="eyebrow">03 / Vehicle sales & referral partnership</p>
-            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Have a car to sell? Let's help it find a buyer.</h2>
-            <p className="mt-5 leading-7 text-muted">
-              Owners, authorised representatives and dealers can share a vehicle with our team for review. Tell us the asking price, location and vehicle details so we can discuss suitable promotion and buyer referrals.
-            </p>
-            <ul className="mt-6 space-y-3 text-sm leading-6 text-muted">
-              <li>• Share the vehicle details and a photo or listing link.</li>
-              <li>• The Showbizz Cars team reviews the submission and selling authority.</li>
-              <li>• Promotion and any referral commission are agreed before proceeding.</li>
-            </ul>
-          </div>
-          <VehicleSalesEnquiryForm settings={data.settings} />
         </div>
       </section>
 
