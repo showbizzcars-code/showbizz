@@ -12,7 +12,7 @@ export const Route = createFileRoute("/collaborate")({
     documentHead({
       title: "Collaborate With Showbizz Cars",
       description: metaDescription(
-        "Explore car business partnerships, vehicle acquisition and revenue-sharing opportunities, or content, creator, film and brand collaborations with Showbizz Cars.",
+        "Explore vehicle sales and referral partnerships, car business opportunities, or content, creator, film and brand collaborations with Showbizz Cars.",
         DEFAULT_DESCRIPTION,
       ),
       path: "/collaborate",
@@ -40,7 +40,7 @@ function CollaboratePage() {
             </div>
             <div className="max-w-xl border-l border-line pl-5 sm:pl-7">
               <p className="leading-7 text-muted">
-                Partner with Showbizz Cars to explore luxury vehicle rental opportunities, content collaborations and innovative automotive business ventures.
+                Partner with Showbizz Cars to explore vehicle sales referrals, luxury vehicle rental opportunities, content collaborations and automotive business ventures.
               </p>
               <p className="mt-4 text-sm leading-6 text-muted">
                 Choose the path that best describes your idea. Each form records the partnership type with your enquiry so the team can distinguish vehicle business proposals from creative opportunities.
