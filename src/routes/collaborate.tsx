@@ -90,13 +90,35 @@ function CollaboratePage() {
             <p>
               Any proposed revenue share or fixed rental arrangement depends on the final commercial model, vehicle suitability, demand, operating expenses and a signed agreement. No return, rental volume or income is guaranteed by making an enquiry.
             </p>
-            <a href="#vehicle-sales-partnership" aria-label="Have a car to sell? Promote your car through Showbizz Cars" className="mt-8 block overflow-hidden rounded-card border border-line shadow-[0_14px_45px_rgba(0,0,0,.24)] transition hover:border-accent/60">
+            <a
+              href="#vehicle-sales-partnership"
+              aria-label="Have a car to sell? Promote your car through Showbizz Cars"
+              className="group relative isolate mt-8 block min-h-[350px] overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_14px_45px_rgba(0,0,0,.32)] transition hover:border-[#d8b36c]"
+            >
               <img
-                src="/vehicle-sales-promo.gif"
-                alt="Have a car to sell? Promote your vehicle through Showbizz Cars to reach potential buyers."
-                className="block h-auto w-full"
+                src="/showbizz-luxury-hero.webp"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover opacity-50 transition duration-700 group-hover:scale-105"
                 loading="lazy"
               />
+              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,12,.96)_0%,rgba(5,8,12,.78)_52%,rgba(5,8,12,.18)_100%)]" />
+              <img
+                src="/vehicle-sales-shimmer.gif"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55"
+              />
+              <div className="relative z-10 flex min-h-[350px] flex-col items-start justify-end p-6 sm:p-7">
+                <p className="eyebrow text-[#e2c58e]">Vehicle sales & referrals</p>
+                <h3 className="mt-3 max-w-xs font-display text-3xl leading-tight text-white sm:text-4xl">Have a car to sell?</h3>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-white/75">
+                  Put your vehicle in front of potential buyers through the Showbizz Cars network.
+                </p>
+                <span className="mt-6 inline-flex min-h-11 items-center rounded-control border border-[#d8b36c]/70 bg-[#d8b36c] px-5 text-sm font-semibold text-[#15110a] transition group-hover:bg-[#f0d59d]">
+                  Promote Your Car <span className="ml-2" aria-hidden="true">↗</span>
+                </span>
+              </div>
             </a>
           </div>
         </div>
