@@ -520,7 +520,7 @@ function EnquiriesTab() {
 
   return (
     <section>
-      <h2 className="text-xl font-bold mb-6">Booking Enquiries</h2>
+      <h2 className="text-xl font-bold mb-6">Website Enquiries & Leads</h2>
       {loading ? (
         <div className="h-24 animate-pulse rounded-card bg-line" />
       ) : (
@@ -542,8 +542,13 @@ function EnquiriesTab() {
                     <p className="font-medium">{eq.contact_name}</p>
                     <p className="text-xs text-muted">{eq.phone} | {eq.email || "No email"}</p>
                   </td>
-                  <td className="p-3">{eq.vehicle_title || "General Enquiry"}</td>
-                  <td className="p-3 max-w-xs truncate text-xs">{eq.message}</td>
+                  <td className="p-3">{eq.vehicle_title || (String(eq.message).startsWith("[VEHICLE SALE PROMOTION]") ? "Vehicle Sale Lead" : "General Enquiry")}</td>
+                  <td className="p-3 max-w-xs text-xs">
+                    <details>
+                      <summary className="cursor-pointer underline underline-offset-2">View details</summary>
+                      <pre className="mt-2 max-w-xs whitespace-pre-wrap break-words font-sans text-xs leading-5 text-muted">{eq.message}</pre>
+                    </details>
+                  </td>
                   <td className="p-3">
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${eq.status === 'new' ? 'bg-accent/20 text-accent' : 'bg-line text-ink'}`}>
                       {eq.status}
