@@ -58,22 +58,19 @@ function CollaboratePage() {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <div className="overflow-hidden rounded-card border border-line bg-black">
-              <video className="aspect-video w-full object-cover" src="/vehicle-sales-client-promo.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 1">
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            <div className="overflow-hidden rounded-card border border-line bg-black">
-              <video className="aspect-video w-full object-cover" src="/collaboration-promo-02.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 2">
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            <div className="overflow-hidden rounded-card border border-line bg-black">
-              <video className="aspect-video w-full object-cover" src="/collaboration-promo-03.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 3">
-                Your browser does not support the video tag.
-              </video>
-            </div>
+          <div className="mt-10 mx-auto w-full max-w-5xl overflow-hidden rounded-card border border-line bg-black shadow-[0_24px_80px_rgba(0,0,0,.38)]">
+            <video
+              className="block aspect-video w-full object-contain"
+              src="/vehicle-sales-client-promo.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label="Showbizz Cars vehicle promotion"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
           <ul className="mt-5 grid gap-2.5 text-base font-semibold leading-7 text-[#ff9a32] sm:text-lg">
             {clientPromoPoints.map((point) => (
