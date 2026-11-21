@@ -27,3 +27,4 @@ If the remote uses another owner or repository name, replace the URL accordingly
 - Check that `.env`, local database files, `.output/`, `node_modules/`, and workspace internals are absent from the repository.
 - Keep the repository private while client details and production readiness are still being finalized.
 - Do not connect GitHub pushes to an automatic production deployment until Hostinger settings, secrets, database, authentication, and backups have been reviewed.
+Preview deployment verification pending.
