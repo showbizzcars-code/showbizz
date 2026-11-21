@@ -1,7 +1,5 @@
 import { BRAND_NAME } from "./brand.ts";
 
-const CANONICAL_SITE_ORIGIN = "https://www.showbizzcars.com";
-
 export function metaDescription(text: string, fallback: string): string {
   const clean = text.replace(/\s+/g, " ").trim();
   const source = clean || fallback;
@@ -77,7 +75,7 @@ export function documentHead(opts: {
   if (opts.noindex) meta.push({ name: "robots", content: "noindex, nofollow" });
   return {
     meta,
-    links: [{ rel: "canonical", href: `${CANONICAL_SITE_ORIGIN}${opts.path}` }],
+    links: [{ rel: "canonical", href: opts.path }],
     scripts: opts.jsonLd
       ? [{ type: "application/ld+json", children: JSON.stringify(opts.jsonLd) }]
       : undefined,

@@ -45,7 +45,7 @@ function VehiclePage() {
       vehicle.transmission === "automatic" ? "Automatic" : vehicle.transmission === "manual" ? "Manual" : null,
     ],
     ["Fuel", vehicle.fuel],
-    ["Availability", availabilityLabel(vehicle.availability)],
+    ["Availability", vehicle.catalogOnly ? "Details to be confirmed" : availabilityLabel(vehicle.availability)],
     ["Daily rate", vehicle.dailyRateLabel],
   ].filter((row): row is [string, string] => Boolean(row[1]));
 
@@ -67,7 +67,9 @@ function VehiclePage() {
         </div>
         {vehicle.summary ? <p className="mt-4 max-w-2xl text-lg text-muted">{vehicle.summary}</p> : null}
         <p className="mt-4 text-sm text-muted">
-          Availability is entered by the team. It can change before anyone replies.
+          {vehicle.catalogOnly
+            ? "This model was requested for the catalogue. Current availability has not been confirmed."
+            : "Availability is entered by the team. It can change before anyone replies."}
         </p>
         {vehicle.availabilityNote ? <p className="mt-2 text-sm">{vehicle.availabilityNote}</p> : null}
 
@@ -104,12 +106,18 @@ function VehiclePage() {
           <div className="mt-8 max-w-2xl whitespace-pre-wrap">{vehicle.description}</div>
         ) : null}
 
-        <div className="mt-10 max-w-2xl">
-          <EnquiryForm
-            vehicleSlug={vehicle.slug}
-            whatsAppHref={enquiryWhatsAppHref(data.settings, vehicle.title)}
-          />
-        </div>
+        {vehicle.catalogOnly ? (
+          <p className="mt-10 max-w-2xl text-sm text-muted">
+            Vehicle-specific booking enquiries will be enabled when the team completes this listing. You can ask about this model using WhatsApp above.
+          </p>
+        ) : (
+          <div className="mt-10 max-w-2xl">
+            <EnquiryForm
+              vehicleSlug={vehicle.slug}
+              whatsAppHref={enquiryWhatsAppHref(data.settings, vehicle.title)}
+            />
+          </div>
+        )}
       </article>
     </SiteShell>
   );

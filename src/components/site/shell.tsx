@@ -62,21 +62,6 @@ export function SiteShell({
       <main id="content" className="flex-1">
         {children}
       </main>
-      {whatsAppLink ? (
-        <a
-          href={whatsAppLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Chat with Showbizz Cars on WhatsApp"
-          title="Chat with Showbizz Cars on WhatsApp"
-          className="fixed bottom-5 right-5 z-[60] grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_10px_35px_rgba(0,0,0,.35)] transition duration-200 hover:scale-105 hover:bg-[#1fba59] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25D366] sm:bottom-6 sm:right-6"
-        >
-          <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7 fill-current">
-            <path d="M16.01 3.2A12.63 12.63 0 0 0 5.17 22.3L3.4 28.8l6.66-1.75A12.64 12.64 0 1 0 16.01 3.2Zm0 22.99a10.34 10.34 0 0 1-5.27-1.44l-.38-.23-3.95 1.04 1.06-3.85-.25-.4a10.35 10.35 0 1 1 8.79 4.88Z" />
-            <path d="M22.05 18.17c-.33-.17-1.96-.97-2.26-1.08-.3-.11-.52-.17-.74.17-.22.33-.85 1.07-1.04 1.3-.19.22-.39.25-.72.08-.33-.17-1.4-.52-2.66-1.65-.98-.87-1.64-1.95-1.83-2.28-.19-.33-.02-.51.14-.68.15-.15.33-.39.5-.58.17-.19.22-.33.33-.55.11-.22.06-.42-.03-.58-.08-.17-.74-1.79-1.02-2.45-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.58.08-.88.42-.3.33-1.15 1.13-1.15 2.76s1.18 3.2 1.34 3.42c.17.22 2.32 3.54 5.62 4.97.78.34 1.39.54 1.87.69.79.25 1.51.22 2.08.13.63-.09 1.96-.8 2.24-1.57.28-.77.28-1.43.2-1.57-.08-.14-.3-.22-.63-.39Z" />
-          </svg>
-        </a>
-      ) : null}
       <footer className="border-t border-line bg-[#101214]">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-7 md:grid-cols-3">
           <div>
@@ -137,17 +122,6 @@ export function SiteShell({
               <li><Link to="/login" className="underline">Staff login</Link></li>
             </ul>
           </div>
-        </div>
-        <div className="border-t border-white/10 px-5 py-3 text-center text-xs text-[#9aa9bb]">
-          Powered by{" "}
-          <a
-            href="https://xconversion.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-[#c5d0df] transition hover:text-white"
-          >
-            XConversionLab
-          </a>
         </div>
       </footer>
     </div>

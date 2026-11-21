@@ -2,7 +2,6 @@ import { PUBLIC_SETTING_KEYS, type PublicSettingKey } from "./brand.ts";
 import { normalizePhone } from "./validate.ts";
 
 export const DEFAULT_WHATSAPP_E164 = "+919380130957";
-export const DEFAULT_BUSINESS_ADDRESS = "SNN Raj Serenity, Begur Kopa Road, Yellanahalli, off Bannerghatta Road, Bengaluru";
 
 export type PublicSettings = {
   whatsappE164: string | null;
@@ -19,7 +18,7 @@ export const EMPTY_SETTINGS: PublicSettings = {
   whatsappE164: DEFAULT_WHATSAPP_E164,
   publicEmail: null,
   publicPhone: null,
-  address: DEFAULT_BUSINESS_ADDRESS,
+  address: null,
   instagramUrl: null,
   facebookUrl: null,
   xUrl: null,
@@ -78,7 +77,7 @@ export function publicSettingsFromRows(rows: { key: string; value: string }[]): 
     })(),
     publicEmail: mailtoHref(pick("public_email")) ? pick("public_email") : null,
     publicPhone: normalizedPhone && telHref(normalizedPhone) ? normalizedPhone : null,
-    address: pick("address") && pick("address")!.length <= 500 ? pick("address") : DEFAULT_BUSINESS_ADDRESS,
+    address: pick("address") && pick("address")!.length <= 500 ? pick("address") : null,
     instagramUrl: httpsUrl(pick("instagram_url")),
     facebookUrl: httpsUrl(pick("facebook_url")),
     xUrl: httpsUrl(pick("x_url")),

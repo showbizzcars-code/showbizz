@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Reveal } from "@/components/site/reveal";
 import { SiteShell } from "@/components/site/shell";
 import { VehicleCard } from "@/components/site/vehicle-card";
-import { VehicleSalesEnquiryForm } from "@/components/site/vehicle-sales-enquiry-form";
 import { BRAND_NAME, DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getHomeSnapshot } from "@/lib/showbizz/content";
 import { sameAs } from "@/lib/showbizz/present";
@@ -51,35 +50,6 @@ function Home() {
       <Reveal className="mx-auto max-w-7xl px-5 py-24 sm:px-8 md:py-32">
         <div className="section-heading"><div><p className="eyebrow">The collection</p><h2 className="mt-4 text-5xl sm:text-6xl">Choose your <em>next move.</em></h2></div><Link to="/vehicles" className="text-sm font-semibold uppercase tracking-[0.16em] text-muted hover:text-ink">View all cars <span aria-hidden>↗</span></Link></div>
         {data.vehicles.length === 0 ? <p className="mt-12 max-w-2xl text-muted">No cars are listed yet. The team will add the latest collection here.</p> : <div className="mt-14 grid gap-5 md:grid-cols-2">{data.vehicles.map((vehicle, index) => <Reveal key={vehicle.slug} delay={index * 80}><VehicleCard vehicle={vehicle} settings={data.settings} /></Reveal>)}</div>}
-      </Reveal>
-
-      <Reveal className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
-        <div className="grid gap-8 md:grid-cols-[.9fr_1.1fr] md:items-start">
-          <div>
-            <p className="eyebrow">Vehicle sales & referrals</p>
-            <h2 className="mt-4 max-w-xl text-5xl leading-[.96] sm:text-6xl">
-              Have a car to sell? <em>Reach more buyers.</em>
-            </h2>
-            <p className="mt-5 max-w-xl leading-7 text-muted">
-              Share your vehicle details with Showbizz Cars. Our team will review your submission and discuss suitable promotion and buyer enquiries with you.
-            </p>
-            <div className="relative mt-8 aspect-[4/3] w-full overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
-              <video
-                src="/vehicle-sales-client-promo.mp4"
-                aria-label="Client-provided animated vehicle promotion"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                className="block h-full w-full object-contain"
-              />
-            </div>
-          </div>
-          <div id="vehicle-sale-enquiry" className="scroll-mt-28">
-            <VehicleSalesEnquiryForm settings={data.settings} />
-          </div>
-        </div>
       </Reveal>
 
       <Reveal className="editorial-band">

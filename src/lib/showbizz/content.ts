@@ -22,6 +22,7 @@ import {
 import { isStaffRole, type StaffRole } from "./access.ts";
 import { parseEnquiry, parseSlug } from "./validate.ts";
 import { publicImageUrl } from "./server-env.server.ts";
+import { CLIENT_CAR_CATALOG } from "./client-cars.ts";
 
 export type Availability = "available" | "unavailable" | "on_request";
 
@@ -39,6 +40,8 @@ export type PublicVehicleCard = {
   availabilityNote: string | null;
   dailyRateLabel: string | null;
   price: { currency: string; amount: string } | null;
+  /** True only for a client-listed model awaiting an authorised inventory record. */
+  catalogOnly?: boolean;
 };
 
 export type PublicVehicleImage = {
@@ -201,11 +204,46 @@ export const listPublishedVehicles = createServerFn({ method: "GET" }).handler(a
 export const listCarsPage = createServerFn({ method: "GET" }).handler(async () => {
   const sql = await sqlClient();
   const rows = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_LIST_SQL);
+  const publishedVehicles = rows.map(cardFromRow);
   const settings = await readSettings();
+  const origin = await requestOrigin();
+  const slugs = CLIENT_CAR_CATALOG.map((model) => model.slug);
+  const existingRows = await sql.query<{ slug: string }>(
+    "select slug from vehicle where slug = any($1::text[])",
+    [slugs],
+  );
+  const existingSlugs = new Set(existingRows.map((row) => row.slug));
+  const publishedBySlug = new Map(publishedVehicles.map((vehicle) => [vehicle.slug, vehicle]));
+
+  const requestedModels = CLIENT_CAR_CATALOG.flatMap((model): PublicVehicleCard[] => {
+    const published = publishedBySlug.get(model.slug);
+    if (published) return [published];
+    if (existingSlugs.has(model.slug)) return [];
+
+    return [{
+      slug: model.slug,
+      title: model.title,
+      summary: "Client-listed model. Photos, specifications, pricing, rental terms and current availability have not yet been supplied.",
+      imageUrl: null,
+      category: null,
+      seats: null,
+      modelYear: null,
+      transmission: null,
+      fuel: null,
+      availability: "on_request",
+      availabilityNote: null,
+      dailyRateLabel: null,
+      price: null,
+      catalogOnly: true,
+    }];
+  });
+
+  const requestedSlugs = new Set(slugs);
+  const additionalVehicles = publishedVehicles.filter((vehicle) => !requestedSlugs.has(vehicle.slug));
   return {
-    origin: await requestOrigin(),
+    origin,
     settings,
-    vehicles: rows.map(cardFromRow),
+    vehicles: [...requestedModels, ...additionalVehicles],
   };
 });
 
@@ -219,7 +257,41 @@ export const getPublishedVehicle = createServerFn({ method: "GET" })
     const sql = await sqlClient();
     const rows = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_BY_SLUG_SQL, [slug]);
     const row = rows[0];
-    if (!row) return null;
+    if (!row) {
+      const clientModel = CLIENT_CAR_CATALOG.find((model) => model.slug === slug);
+      if (!clientModel) return null;
+
+      // A draft or archived row must stay hidden; only show an unpersisted model
+      // as a clearly labelled catalogue placeholder.
+      const anyListing = await sql.query<{ slug: string }>(
+        "select slug from vehicle where slug = $1 limit 1",
+        [slug],
+      );
+      if (anyListing[0]) return null;
+
+      return {
+        origin: await requestOrigin(),
+        settings: await readSettings(),
+        vehicle: {
+          slug: clientModel.slug,
+          title: clientModel.title,
+          summary: "Client-listed model. Photos, specifications, pricing, rental terms and current availability have not yet been supplied.",
+          imageUrl: null,
+          category: null,
+          seats: null,
+          modelYear: null,
+          transmission: null,
+          fuel: null,
+          availability: "on_request" as const,
+          availabilityNote: null,
+          dailyRateLabel: null,
+          price: null,
+          catalogOnly: true,
+          description: "This model was included in the client-supplied Cars list. Add verified photos, specifications, pricing, rental terms and availability through the admin panel before treating it as a fully configured listing.",
+          images: [],
+        },
+      };
+    }
     const { publicImageUrl } = await import("./server-env.server.ts");
     const images = await sql.query<Record<string, unknown>>(PUBLIC_VEHICLE_IMAGES_SQL, [row.id]);
     const detail: PublicVehicleDetail = {
@@ -387,138 +459,45 @@ type HostCarImageInput = {
   base64Data: string;
 };
 
-type HostCarUploadedPhoto = {
-  storageKey: string;
-  contentType: string;
-  byteSize: number;
-  alt: string;
-};
-
-type HostCarVehicleInput = {
-  title: string;
-  modelYear: number;
-  fuel: string;
-  transmission: "automatic" | "manual";
-  currentKilometres: number;
-  registrationState: string;
-  additionalInfo: string;
-};
-
-function isHostCarPhotoStorageKey(value: unknown): value is string {
-  return typeof value === "string" &&
-    /^(?:blob\/)?host-enquiries\/[0-9]+-[a-f0-9]{16}\.(?:jpg|png|webp)$/i.test(value);
-}
-
-function isHostCarUploadedPhoto(value: unknown): value is HostCarUploadedPhoto {
-  if (!value || typeof value !== "object") return false;
-  const photo = value as Partial<HostCarUploadedPhoto>;
-  return isHostCarPhotoStorageKey(photo.storageKey) &&
-    ["image/jpeg", "image/png", "image/webp"].includes(String(photo.contentType)) &&
-    Number.isSafeInteger(photo.byteSize) && Number(photo.byteSize) > 0 && Number(photo.byteSize) <= 3 * 1024 * 1024 &&
-    typeof photo.alt === "string" && photo.alt.length >= 1 && photo.alt.length <= 180;
-}
-
-async function cleanupHostCarPhotoKeys(keys: string[], reason: string): Promise<void> {
-  const { deleteImageFromStorage, recordPendingStorageCleanup } = await import("./storage.server.ts");
-  for (const storageKey of keys) {
-    try {
-      await deleteImageFromStorage(storageKey);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      try {
-        await recordPendingStorageCleanup(storageKey, reason + ": " + detail);
-      } catch {
-        // Keep cleanup best-effort without hiding the original submission result.
-      }
-    }
-  }
-}
-
-export const uploadHostCarPhoto = createServerFn({ method: "POST" })
-  .validator((input: unknown) => input)
-  .handler(async ({ data }): Promise<{ ok: true; storageKey: string; contentType: string; byteSize: number; alt: string } | { ok: false; error: string }> => {
-    const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
-    assertSameSiteRequest();
-    const raw = data as Partial<HostCarImageInput>;
-    if (typeof raw.fileName !== "string" || typeof raw.contentType !== "string" || typeof raw.base64Data !== "string") {
-      return { ok: false, error: "One of the vehicle photos could not be read. Please choose it again." };
-    }
-    if (!/^[a-zA-Z0-9 _().-]{1,120}$/.test(raw.fileName) || !/^[A-Za-z0-9+/]*={0,2}$/.test(raw.base64Data)) {
-      return { ok: false, error: "One of the vehicle photos has an invalid filename or encoding." };
-    }
-    try {
-      const buffer = Buffer.from(raw.base64Data, "base64");
-      const { validateImageInput, uploadImageToStorage } = await import("./storage.server.ts");
-      const validation = validateImageInput(raw.contentType, buffer.byteLength, buffer);
-      if (!validation.ok) return { ok: false, error: validation.error };
-      const stored = await uploadImageToStorage({
-        fileName: raw.fileName,
-        contentType: raw.contentType,
-        byteSize: buffer.byteLength,
-        buffer,
-        folder: "host-enquiries",
-      });
-      return {
-        ok: true,
-        storageKey: stored.storageKey,
-        contentType: stored.contentType,
-        byteSize: stored.byteSize,
-        alt: raw.fileName.replace(/\.webp$/i, "").slice(0, 180) || "Vehicle photo",
-      };
-    } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : "Could not upload one of the vehicle photos." };
-    }
-  });
-
-export const discardHostCarPhotos = createServerFn({ method: "POST" })
-  .validator((input: unknown) => input)
-  .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
-    assertSameSiteRequest();
-    if (!Array.isArray(data) || !data.every(isHostCarPhotoStorageKey)) {
-      return { ok: false };
-    }
-    await cleanupHostCarPhotoKeys(data, "Unsubmitted host-my-car photos");
-    return { ok: true };
-  });
-
 export const submitHostCarEnquiry = createServerFn({ method: "POST" })
   .validator((input: unknown) => input)
   .handler(async ({ data }): Promise<HostCarEnquiryResult> => {
     const { assertSameSiteRequest } = await import("@/lib/auth/isolation.server");
     assertSameSiteRequest();
 
-    const payload = data as { formData?: unknown; images?: unknown; vehicle?: unknown };
-    const photos = payload.images === undefined ? [] : payload.images;
-    if (!Array.isArray(photos) || !photos.every(isHostCarUploadedPhoto)) {
-      return { ok: false, error: "One of the vehicle photos could not be verified. Please choose the photos again." };
-    }
-    const vehicleData = payload.vehicle as Partial<HostCarVehicleInput> | undefined;
-    if (!vehicleData || typeof vehicleData.title !== "string" || vehicleData.title.trim().length < 1 || vehicleData.title.trim().length > 120) {
-      return { ok: false, error: "Enter a vehicle make and model between 1 and 120 characters." };
-    }
-    if (!Number.isInteger(vehicleData.modelYear) || Number(vehicleData.modelYear) < 1980 || Number(vehicleData.modelYear) > 2100) {
-      return { ok: false, error: "Enter a valid year of manufacture." };
-    }
-    if (typeof vehicleData.fuel !== "string" || vehicleData.fuel.length < 1 || vehicleData.fuel.length > 40) {
-      return { ok: false, error: "Select a valid fuel type." };
-    }
-    if (vehicleData.transmission !== "automatic" && vehicleData.transmission !== "manual") {
-      return { ok: false, error: "Select a valid transmission type." };
-    }
-    if (!Number.isSafeInteger(vehicleData.currentKilometres) || Number(vehicleData.currentKilometres) < 0) {
-      return { ok: false, error: "Enter a valid odometer reading." };
-    }
-    if (typeof vehicleData.registrationState !== "string" || vehicleData.registrationState.trim().length < 1 || vehicleData.registrationState.length > 100) {
-      return { ok: false, error: "Enter the state of registration." };
-    }
-    if (typeof vehicleData.additionalInfo !== "string" || vehicleData.additionalInfo.length > 1000) {
-      return { ok: false, error: "Additional information is too long." };
-    }
-
+    const payload = data as { formData?: unknown; images?: unknown };
     const parsed = parseEnquiry(payload.formData);
     if (!parsed.ok) return parsed;
     const input = parsed.value;
+
+    if (!Array.isArray(payload.images) || payload.images.length > 3) {
+      return { ok: false, error: "Please attach no more than 3 vehicle photos." };
+    }
+
+    const imageInputs: { fileName: string; contentType: string; buffer: Buffer }[] = [];
+    let totalBytes = 0;
+    try {
+      const { validateImageInput } = await import("./storage.server.ts");
+      for (const raw of payload.images as HostCarImageInput[]) {
+        if (!raw || typeof raw.fileName !== "string" || typeof raw.contentType !== "string" || typeof raw.base64Data !== "string") {
+          return { ok: false, error: "One of the vehicle photos could not be read. Please try again." };
+        }
+        if (!/^[a-zA-Z0-9 _().-]{1,120}$/.test(raw.fileName) || !/^[A-Za-z0-9+/]*={0,2}$/.test(raw.base64Data)) {
+          return { ok: false, error: "One of the vehicle photos has an invalid filename or encoding." };
+        }
+        const buffer = Buffer.from(raw.base64Data, "base64");
+        totalBytes += buffer.length;
+        if (totalBytes > 3 * 1024 * 1024) {
+          return { ok: false, error: "The compressed photos are too large. Please choose fewer or smaller images." };
+        }
+        const validation = validateImageInput(raw.contentType, buffer.byteLength, buffer);
+        if (!validation.ok) return { ok: false, error: validation.error };
+        imageInputs.push({ fileName: raw.fileName, contentType: raw.contentType, buffer });
+      }
+    } catch {
+      return { ok: false, error: "Could not validate the selected vehicle photos." };
+    }
+
     const sql = await sqlClient();
     const phoneCount = await sql<{ n: number }>`
       select count(*) as n from enquiry
@@ -551,65 +530,68 @@ export const submitHostCarEnquiry = createServerFn({ method: "POST" })
       }
     }
 
-    const title = vehicleData.title.trim();
-    const modelYear = Number(vehicleData.modelYear);
-    const vehicleId = crypto.randomUUID();
-    const enquiryId = crypto.randomUUID();
-    const slugBase = title.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "hosted-car";
-    const vehicleSlug = slugBase + "-" + vehicleId.replace(/-/g, "").slice(0, 10);
-    const vehicleDescription = [
-      "Owner-submitted vehicle awaiting staff review.",
-      "Year of manufacture: " + modelYear,
-      "Fuel type: " + vehicleData.fuel,
-      "Transmission: " + (vehicleData.transmission === "automatic" ? "Automatic" : "Manual"),
-      "Current odometer: " + vehicleData.currentKilometres + " km",
-      "State of registration: " + vehicleData.registrationState.trim(),
-      vehicleData.additionalInfo.trim() ? "Additional information: " + vehicleData.additionalInfo.trim() : "",
-    ].filter(Boolean).join("\n");
+    const uploaded: { storageKey: string; publicUrl: string | null }[] = [];
+    const cleanup = async () => {
+      const { deleteImageFromStorage, recordPendingStorageCleanup } = await import("./storage.server.ts");
+      for (const image of uploaded) {
+        try {
+          await deleteImageFromStorage(image.storageKey);
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          try {
+            await recordPendingStorageCleanup(image.storageKey, "Host-my-car enquiry cleanup: " + reason);
+          } catch {
+            // Keep the original submission error; the pending cleanup attempt is best effort.
+          }
+        }
+      }
+    };
 
     try {
-      await sql.transaction(async (tx) => {
-        await tx`
-          insert into vehicle (
-            id, slug, title, summary, description, model_year, transmission, fuel,
-            availability, status, created_by, updated_by, published_at
-          ) values (
-            ${vehicleId}, ${vehicleSlug}, ${title},
-            ${"Owner-submitted vehicle awaiting staff review."}, ${vehicleDescription},
-            ${modelYear}, ${vehicleData.transmission}, ${vehicleData.fuel.trim()},
-            'on_request', 'draft', 'public-host-my-car-submission', null, null
-          )
-        `;
+      const { uploadImageToStorage } = await import("./storage.server.ts");
+      for (const image of imageInputs) {
+        const stored = await uploadImageToStorage({
+          fileName: image.fileName,
+          contentType: image.contentType,
+          byteSize: image.buffer.byteLength,
+          buffer: image.buffer,
+        });
+        uploaded.push({ storageKey: stored.storageKey, publicUrl: stored.publicUrl });
+      }
 
-        for (let index = 0; index < photos.length; index += 1) {
-          const photo = photos[index] as HostCarUploadedPhoto;
-          await tx`
-            insert into vehicle_image (
-              id, vehicle_id, storage_key, alt, sort_order, content_type, byte_size
-            ) values (
-              ${crypto.randomUUID()}, ${vehicleId}, ${photo.storageKey}, ${photo.alt || (title + " photo " + (index + 1))},
-              ${index}, ${photo.contentType}, ${photo.byteSize}
-            )
-          `;
-        }
+      const message = uploaded.length
+        ? input.message + "\n\nVehicle photos:\n" + uploaded.map((image, index) =>
+            "Photo " + (index + 1) + ": " + (image.publicUrl || ("Storage key: " + image.storageKey))
+          ).join("\n")
+        : input.message;
+      if (message.length > 2000) {
+        await cleanup();
+        return { ok: false, error: "The vehicle details and photo links are too long. Remove a photo or shorten the additional information." };
+      }
 
-        await tx`
-          insert into enquiry (
-            id, vehicle_id, contact_name, phone, email, message, start_on, end_on, status, ip_hash
-          ) values (
-            ${enquiryId}, ${vehicleId}, ${input.contactName}, ${input.phone}, ${input.email || null},
-            ${input.message}, null, null, 'new', ${ipHash}
-          )
-        `;
-      });
-
+      const id = crypto.randomUUID();
+      await sql`
+        insert into enquiry (
+          id, vehicle_id, contact_name, phone, email, message, start_on, end_on, status, ip_hash
+        ) values (
+          ${id},
+          null,
+          ${input.contactName},
+          ${input.phone},
+          ${input.email || null},
+          ${message},
+          null,
+          null,
+          'new',
+          ${ipHash}
+        )
+      `;
       const { logInfo } = await import("./log.server.ts");
-      logInfo("host_car_submission.created", { enquiryId, vehicleId, photoCount: photos.length, hasEmail: Boolean(input.email) });
-      return { ok: true, id: enquiryId, message: input.message };
-    } catch (error) {
-      const { logError } = await import("./log.server.ts");
-      logError("host_car_submission.failed", { reason: error instanceof Error ? error.message : "unknown", photoCount: photos.length });
-      return { ok: false, error: "Could not save the vehicle submission. Please retry; your uploaded photos will be cleaned up." };
+      logInfo("enquiry.created", { id, vehicleId: null, hasEmail: Boolean(input.email), attachmentCount: uploaded.length });
+      return { ok: true, id, message };
+    } catch {
+      await cleanup();
+      return { ok: false, error: "Could not submit the vehicle details or upload the photos. Please try again, or submit without photos." };
     }
   });
 

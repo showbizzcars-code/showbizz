@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validateImageInput, generateStorageKey, signS3Request, uploadImageToStorage, blobStoreIdFromReadWriteToken } from "./storage.server.ts";
+import { validateImageInput, generateStorageKey, signS3Request, uploadImageToStorage } from "./storage.server.ts";
 
-test("validateImageInput accepts valid JPEG, PNG, WebP up to 3MB with correct magic bytes", () => {
+test("validateImageInput accepts valid JPEG, PNG, WebP up to 5MB with correct magic bytes", () => {
   const validJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]);
   assert.deepEqual(validateImageInput("image/jpeg", validJpeg.length, validJpeg), { ok: true });
 
@@ -22,33 +22,22 @@ test("validateImageInput rejects mismatched magic bytes", () => {
   }
 });
 
-test("validateImageInput rejects unsupported content types and sizes over 3MB", () => {
+test("validateImageInput rejects unsupported content types and sizes over 5MB", () => {
   const invalidType = validateImageInput("image/gif", 1024);
   assert.equal(invalidType.ok, false);
 
-  const oversized = validateImageInput("image/jpeg", 3 * 1024 * 1024 + 1);
+  const oversized = validateImageInput("image/jpeg", 6 * 1024 * 1024);
   assert.equal(oversized.ok, false);
 
   const empty = validateImageInput("image/jpeg", 0);
   assert.equal(empty.ok, false);
 });
 
-test("Vercel Blob read-write tokens resolve the store ID and reject malformed tokens", () => {
-  assert.equal(blobStoreIdFromReadWriteToken("vercel_blob_rw_iBqS93J8tpuld4QC_testsecret"), "iBqS93J8tpuld4QC");
-  assert.equal(blobStoreIdFromReadWriteToken("not-a-blob-token"), null);
-  assert.equal(blobStoreIdFromReadWriteToken("vercel_blob_ro_store_id_secret"), null);
-});
-
-test("generateStorageKey supports vehicle galleries and vehicle-owner enquiry photos without directory traversal", () => {
-  const vehicleKey = generateStorageKey("../test.png", "image/png");
-  assert.ok(vehicleKey.startsWith("vehicles/"));
-  assert.ok(vehicleKey.endsWith(".png"));
-  assert.ok(!vehicleKey.includes(".."));
-
-  const enquiryKey = generateStorageKey("owner-photo.webp", "image/webp", "host-enquiries");
-  assert.ok(enquiryKey.startsWith("host-enquiries/"));
-  assert.ok(enquiryKey.endsWith(".webp"));
-  assert.ok(!enquiryKey.includes(".."));
+test("generateStorageKey outputs expected format without directory traversal", () => {
+  const key = generateStorageKey("../test.png", "image/png");
+  assert.ok(key.startsWith("vehicles/"));
+  assert.ok(key.endsWith(".png"));
+  assert.ok(!key.includes(".."));
 });
 
 test("signS3Request generates AWS SigV4 Authorization header with default us-east-1 or configured region", () => {
@@ -80,15 +69,8 @@ test("signS3Request generates AWS SigV4 Authorization header with default us-eas
 test("uploadImageToStorage throws when unconfigured without ALLOW_MOCK_STORAGE", async () => {
   const origEnv = process.env.NODE_ENV;
   const origMock = process.env.ALLOW_MOCK_STORAGE;
-  const origBlob = process.env.BLOB_READ_WRITE_TOKEN;
-  const origS3 = ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"].map((key) => [key, process.env[key]] as const);
   process.env.NODE_ENV = "development";
   delete process.env.ALLOW_MOCK_STORAGE;
-  delete process.env.BLOB_READ_WRITE_TOKEN;
-  delete process.env.S3_ENDPOINT;
-  delete process.env.S3_BUCKET;
-  delete process.env.S3_ACCESS_KEY_ID;
-  delete process.env.S3_SECRET_ACCESS_KEY;
 
   const validJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]);
 
@@ -102,21 +84,17 @@ test("uploadImageToStorage throws when unconfigured without ALLOW_MOCK_STORAGE",
           buffer: validJpeg,
         });
       },
-      /Image storage is not configured/
+      /S3 object storage is not configured/
     );
   } finally {
     process.env.NODE_ENV = origEnv;
-    if (origBlob !== undefined) process.env.BLOB_READ_WRITE_TOKEN = origBlob; else delete process.env.BLOB_READ_WRITE_TOKEN;
-    for (const [key, value] of origS3) {
-      if (value !== undefined) process.env[key] = value;
-      else delete process.env[key];
-    }
-    if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock; else delete process.env.ALLOW_MOCK_STORAGE;
+    if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock;
   }
 });
 
 test("uploadImageToStorage rejects partial S3 configuration even in mock mode", async () => {
-  const origS3 = ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"].map((key) => [key, process.env[key]] as const);
+  const origEndpoint = process.env.S3_ENDPOINT;
+  const origBucket = process.env.S3_BUCKET;
   const origMock = process.env.ALLOW_MOCK_STORAGE;
 
   process.env.S3_ENDPOINT = "https://example.r2.cloudflarestorage.com";
@@ -138,10 +116,8 @@ test("uploadImageToStorage rejects partial S3 configuration even in mock mode", 
       /Partial S3 configuration detected/
     );
   } finally {
-    for (const [key, value] of origS3) {
-      if (value !== undefined) process.env[key] = value;
-      else delete process.env[key];
-    }
+    if (origEndpoint !== undefined) process.env.S3_ENDPOINT = origEndpoint; else delete process.env.S3_ENDPOINT;
+    if (origBucket !== undefined) process.env.S3_BUCKET = origBucket; else delete process.env.S3_BUCKET;
     if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock; else delete process.env.ALLOW_MOCK_STORAGE;
   }
 });
@@ -149,13 +125,9 @@ test("uploadImageToStorage rejects partial S3 configuration even in mock mode", 
 test("uploadImageToStorage rejects mock mode in production", async () => {
   const origEnv = process.env.NODE_ENV;
   const origMock = process.env.ALLOW_MOCK_STORAGE;
-  const origBlob = process.env.BLOB_READ_WRITE_TOKEN;
-  const origS3 = ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"].map((key) => [key, process.env[key]] as const);
 
   process.env.NODE_ENV = "production";
   process.env.ALLOW_MOCK_STORAGE = "true";
-  delete process.env.BLOB_READ_WRITE_TOKEN;
-  for (const key of ["S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]) delete process.env[key];
 
   const validJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]);
 
@@ -169,15 +141,10 @@ test("uploadImageToStorage rejects mock mode in production", async () => {
           buffer: validJpeg,
         });
       },
-      /Real image storage is not configured for production/
+      /S3 object storage is not configured for production/
     );
   } finally {
     process.env.NODE_ENV = origEnv;
-    if (origBlob !== undefined) process.env.BLOB_READ_WRITE_TOKEN = origBlob; else delete process.env.BLOB_READ_WRITE_TOKEN;
-    for (const [key, value] of origS3) {
-      if (value !== undefined) process.env[key] = value;
-      else delete process.env[key];
-    }
     if (origMock !== undefined) process.env.ALLOW_MOCK_STORAGE = origMock; else delete process.env.ALLOW_MOCK_STORAGE;
   }
 });

@@ -11,7 +11,7 @@ Server-rendered car-rental website foundation for Showbizz Cars. This repository
 - Vite + Tailwind CSS v4
 - Nitro `node-server` output (`.output/server/index.mjs`)
 - PostgreSQL for production data; PGlite is the local/preview fallback
-- Self-hosted Better Auth with email/password authentication (public sign-up disabled; staff accounts provisioned via CLI)
+- Self-hosted Better Auth with email/password authentication (public sign-up disabled; one-time guarded first-admin setup; additional staff provisioned via CLI)
 
 ## Local setup
 
@@ -55,3 +55,16 @@ See [Hostinger deployment notes](docs/HOSTINGER_DEPLOYMENT.md). For managed Node
 ## Project status
 
 The public pages, self-hosted Better Auth authentication, and admin CMS for vehicles, images, enquiries, posts, FAQs, testimonials, and settings are implemented and verified. See `docs/ARCHITECTURE.md` and `docs/HOSTINGER_DEPLOYMENT.md` for deployment procedures.
+
+
+## First administrator setup (one time)
+
+Public Better Auth sign-up remains disabled. To create the first administrator through the staff login page:
+
+1. Configure `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, and `VITE_AUTH_ENABLED=true` for the intended deployment environment.
+2. Set `ADMIN_SETUP_TOKEN` to a unique random secret of at least 32 characters in that deployment environment. Never commit or share the token.
+3. Open `/admin`. While no administrator exists, the redirect to `/login` displays the initial administrator form. Enter the setup token, administrator name, email, and a password of at least 12 characters.
+4. After creation, the account is assigned the `admin` role and the registration form closes automatically. The page returns to the normal sign-in form; sign in with the newly created credentials.
+5. Remove `ADMIN_SETUP_TOKEN` from the environment after setup and redeploy. This is defense in depth: the database check already disables registration after an administrator exists.
+
+The initial registration is handled by a server-only action that validates the setup token, validates the input, hashes the password with Better Auth's password hasher, and inserts the user, credential account, and admin role in one database transaction. Simultaneous first-run attempts are serialized and rechecked inside the transaction. Existing sign-in behavior and protected admin routes remain in place.
