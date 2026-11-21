@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Reveal } from "@/components/site/reveal";
 import { SiteShell } from "@/components/site/shell";
 import { VehicleCard } from "@/components/site/vehicle-card";
 import { BRAND_NAME, DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getHomeSnapshot } from "@/lib/showbizz/content";
-import { sameAs, SOCIAL_LINKS } from "@/lib/showbizz/present";
+import { sameAs } from "@/lib/showbizz/present";
 import { documentHead, metaDescription, rentalBusinessLd } from "@/lib/showbizz/seo";
 
 export const Route = createFileRoute("/")({
@@ -29,121 +30,99 @@ function Home() {
   const data = Route.useLoaderData();
   return (
     <SiteShell settings={data.settings}>
-      <section className="border-b border-line bg-[#101214]">
-        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-7 md:py-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#c0c5cb]">{BRAND_NAME}</p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight md:text-6xl">
-            Find a car for your next journey.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted">
-            Browse our cars, check the details, and send an enquiry. Our team will confirm availability
-            and price with you. An enquiry does not book a car or take payment on this website.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to="/vehicles"
-              className="inline-flex h-11 items-center rounded-control bg-accent px-5 text-sm font-medium text-accent-fg"
-            >
-              Browse cars
-            </Link>
-            <Link
-              to="/contact"
-              className="inline-flex h-11 items-center rounded-control border border-line bg-surface px-5 text-sm font-medium"
-            >
-              Send an enquiry
-            </Link>
+      <section className="home-hero">
+        <Reveal className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 py-10 sm:px-8 md:min-h-[640px] md:grid-cols-[0.72fr_1.28fr] md:gap-8 md:py-14">
+          <div className="max-w-xl md:py-10">
+            <p className="eyebrow">Showbizz Cars / Bengaluru</p>
+            <h1 className="mt-6 max-w-xl text-5xl leading-[0.94] sm:text-6xl md:text-7xl">Subscribe to <em>Luxury Cars.</em></h1>
+            <h2 className="mt-6 max-w-xl text-2xl leading-tight sm:text-3xl">Invest in Your Business, Not in Car Ownership.</h2>
+            <p className="mt-5 max-w-lg text-base leading-7 text-muted">Experience the convenience and prestige of driving a luxury car without making an outright vehicle purchase.</p>
+            <p className="mt-4 max-w-lg text-base leading-7 text-muted">Showbizz Cars offers monthly luxury-car rental and subscription-style arrangements for entrepreneurs, startup founders, corporate executives and automotive enthusiasts in Bengaluru.</p>
+            <div className="mt-8 flex flex-wrap gap-3"><Link to="/vehicles" className="button-quiet">Explore cars</Link></div>
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <span className="text-muted">Follow us:</span>
-            {SOCIAL_LINKS.map((profile) => (
-              <a
-                key={profile.label}
-                className="underline underline-offset-4"
-                href={profile.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {profile.label}
-              </a>
-            ))}
-          </div>
-        </div>
+          <figure className="overflow-hidden rounded-card border border-white/10 bg-[#e8e6e1] shadow-[0_25px_80px_rgba(0,0,0,.32)]">
+            <img src="/showbizz-luxury-hero.webp" alt="Black luxury sedan with luxury car rental and monthly subscription plans" className="block h-auto w-full" fetchPriority="high" />
+          </figure>
+        </Reveal>
+        <div className="home-hero__rail"><span>The collection</span><span>Scroll to explore ↓</span></div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-14 sm:px-7">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-display text-3xl">Cars</h2>
-          <Link to="/vehicles" className="text-sm underline">View all cars</Link>
-        </div>
-        {data.vehicles.length === 0 ? (
-          <p className="mt-6 max-w-2xl text-muted">
-            No cars are listed yet. The team will add car photos, details, availability, and daily prices here.
-          </p>
-        ) : (
-          <div className="mt-6 grid gap-4">
-            {data.vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.slug} vehicle={vehicle} />
-            ))}
-          </div>
-        )}
-      </section>
+      <Reveal className="mx-auto max-w-7xl px-5 py-24 sm:px-8 md:py-32">
+        <div className="section-heading"><div><p className="eyebrow">The collection</p><h2 className="mt-4 text-5xl sm:text-6xl">Choose your <em>next move.</em></h2></div><Link to="/vehicles" className="text-sm font-semibold uppercase tracking-[0.16em] text-muted hover:text-ink">View all cars <span aria-hidden>↗</span></Link></div>
+        {data.vehicles.length === 0 ? <p className="mt-12 max-w-2xl text-muted">No cars are listed yet. The team will add the latest collection here.</p> : <div className="mt-14 grid gap-5 md:grid-cols-2">{data.vehicles.map((vehicle, index) => <Reveal key={vehicle.slug} delay={index * 80}><VehicleCard vehicle={vehicle} settings={data.settings} /></Reveal>)}</div>}
+      </Reveal>
 
-      <section className="border-y border-line bg-[#15181b]">
-        <div className="mx-auto grid max-w-5xl gap-8 px-5 py-14 md:grid-cols-3">
-          {[
-            ["01", "Browse cars", "Check the car details and choose what suits your journey."],
-            ["02", "Send an enquiry", "Share your name, phone number, and travel dates."],
-            ["03", "Confirm with our team", "Our team will reply and confirm availability and price."],
-          ].map(([step, title, body]) => (
-            <div key={step}>
-              <p className="text-sm tabular-nums text-muted">{step}</p>
-              <h2 className="mt-2 font-display text-2xl">{title}</h2>
-              <p className="mt-2 text-sm text-muted">{body}</p>
+      <Reveal className="editorial-band">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="max-w-3xl">
+            <p className="eyebrow text-muted">A smarter way to drive</p>
+            <h2 className="mt-4 text-5xl leading-[0.95] sm:text-6xl">Why Consider a <em>Monthly Subscription?</em></h2>
+          </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <article className="rounded-card border border-line bg-surface p-6 sm:p-7">
+              <h3 className="text-2xl text-[#f4f2ed]">Predictable Monthly Rental</h3>
+              <p className="mt-3 leading-7 text-muted">Plan your vehicle expenses around an agreed monthly rental.</p>
+            </article>
+            <article className="rounded-card border border-line bg-surface p-6 sm:p-7">
+              <h3 className="text-2xl text-[#f4f2ed]">Avoid the Purchase Commitment</h3>
+              <p className="mt-3 leading-7 text-muted">Access a car without purchasing it outright or taking a vehicle loan yourself.</p>
+            </article>
+            <article className="rounded-card border border-line bg-surface p-6 sm:p-7">
+              <h3 className="text-2xl text-[#f4f2ed]">Reduced Ownership Responsibilities</h3>
+              <p className="mt-3 leading-7 text-muted">Maintenance and insurance may be included according to your selected vehicle and contract.</p>
+            </article>
+            <article className="rounded-card border border-line bg-surface p-6 sm:p-7">
+              <h3 className="text-2xl text-[#f4f2ed]">Drive the Car That Suits Your Current Needs</h3>
+              <p className="mt-3 leading-7 text-muted">Choose a suitable vehicle for your lifestyle, professional image or business requirements.</p>
+            </article>
+            <article className="rounded-card border border-line bg-surface p-6 sm:p-7 sm:col-span-2 lg:col-span-1">
+              <h3 className="text-2xl text-[#f4f2ed]">Personalised Rental Plans</h3>
+              <p className="mt-3 leading-7 text-muted">Discuss contract duration, mileage limits and available vehicle options with our team.</p>
+            </article>
+          </div>
+        </div>
+      </Reveal>
+
+      <Reveal className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+          <div>
+            <p className="eyebrow">Simple process</p>
+            <h2 className="mt-4 text-5xl leading-[0.95] sm:text-6xl">How It <em>Works</em></h2>
+            <p className="mt-6 max-w-md leading-7 text-muted">Our team will guide you through the vehicle options, rental requirements and quotation before anything is confirmed.</p>
+          </div>
+          <ol className="divide-y divide-line border-y border-line">
+            <li className="flex gap-5 py-5"><span className="eyebrow pt-1">01</span><p className="leading-7">Choose your preferred car.</p></li>
+            <li className="flex gap-5 py-5"><span className="eyebrow pt-1">02</span><p className="leading-7">Share your rental duration and monthly mileage requirements.</p></li>
+            <li className="flex gap-5 py-5"><span className="eyebrow pt-1">03</span><p className="leading-7">Complete the required identity, driving and eligibility verification.</p></li>
+            <li className="flex gap-5 py-5"><span className="eyebrow pt-1">04</span><p className="leading-7">Review the quotation, deposit and agreement.</p></li>
+            <li className="flex gap-5 py-5"><span className="eyebrow pt-1">05</span><p className="leading-7">Complete payment formalities and arrange delivery.</p></li>
+          </ol>
+        </div>
+      </Reveal>
+
+      <Reveal className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 md:pb-28">
+        <div className="grid gap-8 rounded-card border border-line bg-surface p-7 sm:p-10 md:grid-cols-[0.75fr_1.25fr] md:items-center">
+          <div>
+            <p className="eyebrow">Clear terms</p>
+            <h2 className="mt-4 text-4xl sm:text-5xl">What Is <em>Included?</em></h2>
+          </div>
+          <p className="max-w-2xl text-base leading-7 text-muted">The exact inclusions depend on the vehicle and agreement. Your quotation will clearly identify the rental amount, security deposit, mileage allowance, maintenance, insurance, excess-kilometre charges and other applicable expenses.</p>
+        </div>
+      </Reveal>
+
+      <Reveal className="editorial-band">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <p className="eyebrow text-muted">Your next drive</p>
+          <div className="mt-5">
+            <div>
+              <h2 className="max-w-3xl text-5xl leading-[0.95] sm:text-7xl">Ready to <em>Subscribe?</em></h2>
+              <p className="mt-6 max-w-2xl text-lg leading-7 text-muted">Tell us which car you want, how long you need it and how much you plan to drive.</p>
             </div>
-          ))}
+          </div>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="mx-auto grid max-w-5xl gap-10 px-5 py-14 md:grid-cols-2">
-        <div>
-          <h2 className="font-display text-3xl">Customer reviews</h2>
-          {data.testimonials.length === 0 ? (
-            <p className="mt-4 text-muted">Customer reviews will appear here when added by the team.</p>
-          ) : (
-            <ul className="mt-4 space-y-4">
-              {data.testimonials.map((item) => (
-                <li key={item.quote} className="rounded-card border border-line bg-surface p-4">
-                  <blockquote>
-                    <p>{item.quote}</p>
-                    <footer className="mt-3 text-sm text-muted">
-                      {item.authorName}
-                      {item.attribution ? ` · ${item.attribution}` : ""}
-                    </footer>
-                  </blockquote>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <h2 className="font-display text-3xl">Questions</h2>
-          {data.faqs.length === 0 ? (
-            <p className="mt-4 text-muted">Answers to common questions will appear here when added.</p>
-          ) : (
-            <ul className="mt-4 space-y-4">
-              {data.faqs.map((faq) => (
-                <li key={faq.question}>
-                  <h3 className="font-display text-xl">{faq.question}</h3>
-                  <p className="mt-2 text-sm text-muted">{faq.answer}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-4">
-            <Link to="/faq" className="text-sm underline">View all questions</Link>
-          </p>
-        </div>
-      </section>
+      <Reveal className="mx-auto grid max-w-7xl gap-16 px-5 py-24 sm:px-8 md:grid-cols-[1fr_1fr] md:py-32"><div><p className="eyebrow">In their words</p><h2 className="mt-5 text-5xl sm:text-6xl">Good journeys<br /><em>stay with you.</em></h2></div><div className="space-y-5">{data.testimonials.length === 0 ? <p className="text-muted">Customer reviews will appear here when added by the team.</p> : data.testimonials.map((item) => <blockquote key={item.quote} className="quote-card"><p>“{item.quote}”</p><footer>{item.authorName}{item.attribution ? ` · ${item.attribution}` : ""}</footer></blockquote>)}<Link to="/testimonials" className="inline-block pt-3 text-sm font-semibold uppercase tracking-[0.16em] text-muted hover:text-ink">Read all reviews <span aria-hidden>↗</span></Link></div></Reveal>
     </SiteShell>
   );
 }

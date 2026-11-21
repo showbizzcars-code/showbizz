@@ -9,12 +9,20 @@ const rawDatabaseUrl =
   typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 const databaseUrl =
   rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+const isVercelRuntime =
+  typeof process !== "undefined" &&
+  (process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV));
+
+if (isVercelRuntime && !databaseUrl) {
+  throw new Error(
+    "DATABASE_URL is required on Vercel. Refusing to start with the local PGlite fallback.",
+  );
+}
 
 /**
- * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
- * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
- * the app has a working database even with nothing configured — the live preview
- * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ * Active backend: real **Postgres** when `DATABASE_URL` is set. The embedded
+ * PGlite database remains available only for local development, where it keeps
+ * the app usable without external infrastructure.
  */
 export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
 

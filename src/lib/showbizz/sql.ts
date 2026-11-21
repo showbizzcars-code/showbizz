@@ -2,7 +2,8 @@
 
 export const PUBLIC_VEHICLE_LIST_SQL = `
 select id, slug, title, summary, category, seats, model_year, transmission, fuel,
-       daily_rate_minor, currency_code, availability, availability_note
+       daily_rate_minor, currency_code, availability, availability_note,
+       (select storage_key from vehicle_image where vehicle_id = vehicle.id order by sort_order asc, created_at asc limit 1) as image_storage_key
 from vehicle
 where status = 'published'
 order by title asc

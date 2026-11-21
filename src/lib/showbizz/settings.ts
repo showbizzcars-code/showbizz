@@ -1,6 +1,8 @@
 import { PUBLIC_SETTING_KEYS, type PublicSettingKey } from "./brand.ts";
 import { normalizePhone } from "./validate.ts";
 
+export const DEFAULT_WHATSAPP_E164 = "+919380130957";
+
 export type PublicSettings = {
   whatsappE164: string | null;
   publicEmail: string | null;
@@ -13,7 +15,7 @@ export type PublicSettings = {
 };
 
 export const EMPTY_SETTINGS: PublicSettings = {
-  whatsappE164: null,
+  whatsappE164: DEFAULT_WHATSAPP_E164,
   publicEmail: null,
   publicPhone: null,
   address: null,
@@ -69,7 +71,10 @@ export function publicSettingsFromRows(rows: { key: string; value: string }[]): 
   const phone = pick("public_phone");
   const normalizedPhone = phone ? normalizePhone(phone) : null;
   return {
-    whatsappE164: pick("whatsapp_e164")?.match(/^\+[1-9]\d{7,14}$/) ? pick("whatsapp_e164") : null,
+    whatsappE164: (() => {
+      const value = pick("whatsapp_e164");
+      return value && /^\+[1-9]\d{7,14}$/.test(value) ? value : DEFAULT_WHATSAPP_E164;
+    })(),
     publicEmail: mailtoHref(pick("public_email")) ? pick("public_email") : null,
     publicPhone: normalizedPhone && telHref(normalizedPhone) ? normalizedPhone : null,
     address: pick("address") && pick("address")!.length <= 500 ? pick("address") : null,

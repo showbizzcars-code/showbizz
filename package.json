@@ -14,7 +14,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:cleanup-storage": "node --experimental-strip-types scripts/retry-storage-cleanup.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test scripts/migration-plan.test.mjs scripts/sign-out-plan.test.mjs && node --experimental-strip-types --test src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/showbizz/foundation.test.ts src/lib/showbizz/storage.test.ts src/lib/showbizz/access.test.ts src/lib/showbizz/admin.test.ts",
+    "test": "node --test scripts/migration-plan.test.mjs scripts/sign-out-plan.test.mjs && node --experimental-strip-types --test src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/showbizz/foundation.test.ts src/lib/showbizz/storage.test.ts src/lib/showbizz/access.test.ts src/lib/showbizz/admin.test.ts src/lib/showbizz/present.test.ts src/lib/showbizz/client-cars.test.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "verify": "npm run typecheck && npm run lint && npm test"

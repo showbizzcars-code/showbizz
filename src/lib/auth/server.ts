@@ -1,9 +1,10 @@
 /**
  * Self-hosted Better Auth for THIS app (server-only).
  *
- * Uses self-hosted Better Auth email/password authentication. Public sign-up
- * is disabled (`disableSignUp: true`); staff accounts are provisioned via CLI
- * (`scripts/provision-staff.ts`) and assigned roles in the `staff_member` table.
+ * Uses self-hosted Better Auth email/password authentication. Public Better Auth
+ * sign-up stays disabled (`disableSignUp: true`). The first admin can be created
+ * once through the guarded login-page bootstrap; additional staff accounts are
+ * provisioned via CLI (`scripts/provision-staff.ts`) and assigned a staff role.
  *
  * The app runs its own Better Auth at `/api/auth/*`, so session cookies remain on
  * this app's own origin.
