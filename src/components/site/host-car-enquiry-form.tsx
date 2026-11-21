@@ -219,7 +219,11 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
           <input name="currentKilometres" type="number" required min={0} step={1} placeholder="e.g. 42000" className={control} />
         </label>
         <label className="text-sm font-medium">State of Registration
-          <input name="registrationState" required maxLength={100} placeholder="e.g. Karnataka" className={control} />
+          <select name="registrationState" required defaultValue="" className={control}>
+            <option value="" disabled>Select registration state</option>
+            <option value="Karnataka">Karnataka registration</option>
+            <option value="Other state">Other state registration</option>
+          </select>
         </label>
         <label className="text-sm font-medium sm:col-span-2">Vehicle Photos <span className="font-normal text-muted">(optional, up to 3 images)</span>
           <input
