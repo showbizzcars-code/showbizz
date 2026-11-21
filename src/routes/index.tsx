@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Reveal } from "@/components/site/reveal";
 import { SiteShell } from "@/components/site/shell";
 import { VehicleCard } from "@/components/site/vehicle-card";
+import { FeaturedVehicleShowcase } from "@/components/site/featured-vehicle-showcase";
 import { BRAND_NAME, DEFAULT_DESCRIPTION } from "@/lib/showbizz/brand";
 import { getHomeSnapshot } from "@/lib/showbizz/content";
 import { sameAs } from "@/lib/showbizz/present";
@@ -31,18 +32,24 @@ function Home() {
   return (
     <SiteShell settings={data.settings}>
       <section className="home-hero">
-        <Reveal className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 py-10 sm:px-8 md:min-h-[640px] md:grid-cols-[0.72fr_1.28fr] md:gap-8 md:py-14">
-          <div className="max-w-xl md:py-10">
+        <Reveal className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 lg:min-h-[680px] lg:grid-cols-[0.82fr_1.18fr] lg:gap-14 lg:py-16">
+          <div className="max-w-xl lg:py-10">
             <p className="eyebrow">Showbizz Cars / Bengaluru</p>
             <h1 className="mt-6 max-w-xl text-5xl leading-[0.94] sm:text-6xl md:text-7xl">Subscribe to <em>Luxury Cars.</em></h1>
             <h2 className="mt-6 max-w-xl text-2xl leading-tight sm:text-3xl">Invest in Your Business, Not in Car Ownership.</h2>
             <p className="mt-5 max-w-lg text-base leading-7 text-muted">Experience the convenience and prestige of driving a luxury car without making an outright vehicle purchase.</p>
             <p className="mt-4 max-w-lg text-base leading-7 text-muted">Showbizz Cars offers monthly luxury-car rental and subscription-style arrangements for entrepreneurs, startup founders, corporate executives and automotive enthusiasts in Bengaluru.</p>
-            <div className="mt-8 flex flex-wrap gap-3"><Link to="/vehicles" className="button-quiet">Explore cars</Link></div>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/vehicles" className="button-primary">Explore the collection <span aria-hidden="true">↗</span></Link>
+              <Link to="/host-my-car" className="button-quiet">Host your car</Link>
+            </div>
+            <div className="home-hero__stats" aria-label="Showbizz Cars collection information">
+              <div><strong>{data.vehicleCount.toString().padStart(2, "0")}</strong><span>Vehicles listed</span></div>
+              <div><strong>Monthly</strong><span>Rental options</span></div>
+              <div><strong>Direct</strong><span>Team enquiries</span></div>
+            </div>
           </div>
-          <figure className="overflow-hidden rounded-card border border-white/10 bg-[#e8e6e1] shadow-[0_25px_80px_rgba(0,0,0,.32)]">
-            <img src="/showbizz-luxury-hero.webp" alt="Black luxury sedan with luxury car rental and monthly subscription plans" className="block h-auto w-full" fetchPriority="high" />
-          </figure>
+          <FeaturedVehicleShowcase vehicles={data.vehicles} />
         </Reveal>
         <div className="home-hero__rail"><span>The collection</span><span>Scroll to explore ↓</span></div>
       </section>
@@ -51,6 +58,25 @@ function Home() {
         <div className="section-heading"><div><p className="eyebrow">The collection</p><h2 className="mt-4 text-5xl sm:text-6xl">Choose your <em>next move.</em></h2></div><Link to="/vehicles" className="text-sm font-semibold uppercase tracking-[0.16em] text-muted hover:text-ink">View all cars <span aria-hidden>↗</span></Link></div>
         {data.vehicles.length === 0 ? <p className="mt-12 max-w-2xl text-muted">No cars are listed yet. The team will add the latest collection here.</p> : <div className="mt-14 grid gap-5 md:grid-cols-2">{data.vehicles.map((vehicle, index) => <Reveal key={vehicle.slug} delay={index * 80}><VehicleCard vehicle={vehicle} settings={data.settings} /></Reveal>)}</div>}
       </Reveal>
+
+      {data.faqs.length > 0 ? (
+        <Reveal className="mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:py-28">
+          <div>
+            <p className="eyebrow">Good to know</p>
+            <h2 className="mt-4 text-5xl leading-[0.95] sm:text-6xl">A few things, <em>made clear.</em></h2>
+            <p className="mt-5 max-w-md leading-7 text-muted">Answers to common questions, maintained by the Showbizz Cars team.</p>
+            <Link to="/faq" className="mt-7 inline-flex text-sm font-semibold uppercase tracking-[.14em] text-[#d7a54a] hover:text-[#f0c777]">View all FAQs <span className="ml-2" aria-hidden="true">↗</span></Link>
+          </div>
+          <div className="home-faq-list">
+            {data.faqs.map((faq, index) => (
+              <details key={faq.question} className="home-faq" open={index === 0}>
+                <summary><span>{faq.question}</span><span className="home-faq__toggle" aria-hidden="true">+</span></summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </Reveal>
+      ) : null}
 
       <Reveal className="editorial-band">
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
