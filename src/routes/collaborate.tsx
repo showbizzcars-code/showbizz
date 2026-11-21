@@ -47,6 +47,31 @@ function CollaboratePage() {
             </div>
           </div>
 
+          <div className="mt-10 space-y-6">
+            <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12]">
+              <video
+                src="/vehicle-sales-client-promo.mp4"
+                aria-label="Client-provided animated muscle car promotion"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="block h-auto w-full"
+              />
+            </div>
+            <ul className="mx-auto w-full max-w-4xl space-y-2 text-base font-medium leading-6 text-[#f4d17e] sm:text-lg">
+              <li>• Zero depreciation 'Buy back offer'</li>
+              <li>• Monopoly business</li>
+              <li>• Iconic filmy car from KGF 2 &amp; Jailer 2</li>
+              <li>• Massive fan following</li>
+              <li>• One year contract</li>
+              <li>• Excellent rental opportunities with filming firms, content creators, individual, videography, wedding and many more.</li>
+              <li>• Shared/Fixed rental share option.</li>
+              <li>• Cash based procurement only</li>
+            </ul>
+          </div>
+
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             <a href="#car-business-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
               <p className="eyebrow">01 / Asset & fleet</p>
