@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Reveal } from "@/components/site/reveal";
 import { SiteShell } from "@/components/site/shell";
@@ -26,6 +27,66 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+const clientPromoPoints = [
+  "Zero depreciation 'Buy back offer'",
+  "Monopoly business",
+  "Iconic filmy car from KGF 2 & Jailer 2",
+  "Massive fan following",
+  "One year contract",
+  "Excellent rental opportunities with filming firms, content creators, individual, videography, wedding and many more.",
+  "Shared/Fixed rental share option.",
+  "Cash based procurement only",
+];
+
+const PROMO_SRC = "/vehicle-sales-client-promo.mp4";
+
+function HomepagePromoVideo() {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      el.preload = "metadata";
+      el.src = PROMO_SRC;
+      el.load();
+      void el.play().catch(() => {});
+    };
+    if (typeof IntersectionObserver === "undefined") {
+      start();
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          start();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "240px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={ref}
+      className="block h-auto w-full bg-black object-contain"
+      width={640}
+      height={360}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-label="Showbizz Cars vehicle partnership"
+    />
+  );
+}
+
 function Home() {
   const data = Route.useLoaderData();
   return (
@@ -45,6 +106,22 @@ function Home() {
           </figure>
         </Reveal>
         <div className="home-hero__rail"><span>The collection</span><span>Scroll to explore ↓</span></div>
+      </section>
+
+      <section className="border-b border-line bg-bg">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 md:py-14">
+          <div className="overflow-hidden rounded-card border border-line bg-black">
+            <HomepagePromoVideo />
+          </div>
+          <ul className="mt-5 grid gap-2.5 text-base font-semibold leading-7 text-[#f4f2ed] sm:text-lg">
+            {clientPromoPoints.map((point) => (
+              <li key={point} className="flex gap-3">
+                <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f4f2ed]" aria-hidden="true" />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <Reveal className="mx-auto max-w-7xl px-5 py-24 sm:px-8 md:py-32">
