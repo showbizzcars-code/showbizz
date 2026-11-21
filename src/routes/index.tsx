@@ -63,37 +63,17 @@ function Home() {
             <p className="mt-5 max-w-xl leading-7 text-muted">
               Share your vehicle details with Showbizz Cars. Our team will review your submission and discuss suitable promotion and buyer enquiries with you.
             </p>
-            <div className="relative mt-8 min-h-[360px] overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
-              <img
-                src="/showbizz-luxury-hero.webp"
-                alt="Black luxury car in a cinematic studio setting"
-                className="absolute inset-0 h-full w-full object-cover opacity-65"
-                loading="lazy"
+            <div className="relative mt-8 aspect-[4/3] w-full overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
+              <video
+                src="/vehicle-sales-client-promo.mp4"
+                aria-label="Client-provided animated vehicle promotion"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="block h-full w-full object-contain"
               />
-              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,12,.92)_0%,rgba(5,8,12,.62)_54%,rgba(5,8,12,.18)_100%)]" />
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid h-full w-full grid-cols-2 grid-rows-2">
-                <img src="/vehicle-sales-promo-00.webp" alt="" className="block h-full w-full object-fill" />
-                <img src="/vehicle-sales-promo-10.webp" alt="" className="block h-full w-full object-fill" />
-                <img src="/vehicle-sales-promo-01.webp" alt="" className="block h-full w-full object-fill" />
-                <img src="/vehicle-sales-promo-11.webp" alt="" className="block h-full w-full object-fill" />
-              </div>
-              <div className="relative z-10 flex min-h-[360px] flex-col items-start justify-end p-6 sm:p-8">
-                <p className="eyebrow text-[#e2c58e]">Showbizz Cars / Vehicle promotion</p>
-                <h3 className="mt-3 max-w-sm font-display text-4xl leading-tight text-white sm:text-5xl">
-                  More visibility. More buyer enquiries.
-                </h3>
-                <ul className="mt-5 space-y-2 text-sm text-white/80">
-                  <li>• Share your car details and asking price</li>
-                  <li>• Get reviewed by the Showbizz Cars team</li>
-                  <li>• Discuss promotion and referral terms</li>
-                </ul>
-                <a
-                  href="#vehicle-sale-enquiry"
-                  className="mt-7 inline-flex min-h-11 items-center rounded-control border border-[#d8b36c]/70 bg-[#d8b36c] px-5 text-sm font-semibold text-[#15110a] transition hover:bg-[#f0d59d]"
-                >
-                  List Your Car <span className="ml-2" aria-hidden="true">↗</span>
-                </a>
-              </div>
             </div>
           </div>
           <div id="vehicle-sale-enquiry" className="scroll-mt-28">
