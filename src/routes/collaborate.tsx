@@ -19,6 +19,17 @@ export const Route = createFileRoute("/collaborate")({
   component: CollaboratePage,
 });
 
+const clientPromoPoints = [
+  "Zero depreciation 'Buy back offer'",
+  "Monopoly business",
+  "Iconic filmy car from KGF 2 & Jailer 2",
+  "Massive fan following",
+  "One year contract",
+  "Excellent rental opportunities with filming firms, content creators, individual, videography, wedding and many more.",
+  "Shared/Fixed rental share option.",
+  "Cash based procurement only",
+];
+
 function CollaboratePage() {
   const data = Route.useLoaderData();
 
@@ -47,6 +58,32 @@ function CollaboratePage() {
             </div>
           </div>
 
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <div className="overflow-hidden rounded-card border border-line bg-black">
+              <video className="aspect-video w-full object-cover" src="/vehicle-sales-client-promo.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 1">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="overflow-hidden rounded-card border border-line bg-black">
+              <video className="aspect-video w-full object-cover" src="/collaboration-promo-02.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 2">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="overflow-hidden rounded-card border border-line bg-black">
+              <video className="aspect-video w-full object-cover" src="/collaboration-promo-03.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="Showbizz Cars promotional video 3">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+          <ul className="mt-5 grid gap-2.5 text-base font-semibold leading-7 text-[#ff9a32] sm:text-lg">
+            {clientPromoPoints.map((point) => (
+              <li key={point} className="flex gap-3">
+                <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff8a00]" aria-hidden="true" />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             <a href="#car-business-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
               <p className="eyebrow">01 / Asset & fleet</p>
@@ -54,7 +91,7 @@ function CollaboratePage() {
               <p className="mt-4 max-w-xl leading-7 text-muted">
                 Considering purchasing a recommended vehicle for rental deployment? Explore a possible revenue-sharing partnership, fixed rental arrangement or an initial business discussion.
               </p>
-              <span className="mt-7 inline-flex items-center text-sm font-semibold">Discuss a vehicle partnership <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
+              <span className="mt-7 inline-flex items-center text-sm font-bold text-[#ff8a00] underline decoration-[#ff8a00]/60 underline-offset-4 transition-colors group-hover:text-[#ffb45c]">Discuss a vehicle partnership <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
             </a>
             <a href="#content-partnership" className="group rounded-card border border-line bg-white/[.035] p-6 transition hover:bg-white/[.07] sm:p-8">
               <p className="eyebrow">02 / Content & creativity</p>
@@ -62,7 +99,7 @@ function CollaboratePage() {
               <p className="mt-4 max-w-xl leading-7 text-muted">
                 For automotive creators, influencers, filmmakers, production houses, agencies and brands interested in campaigns, shoots or automotive experiences.
               </p>
-              <span className="mt-7 inline-flex items-center text-sm font-semibold">Pitch a creative collaboration <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
+              <span className="mt-7 inline-flex items-center text-sm font-bold text-[#ff8a00] underline decoration-[#ff8a00]/60 underline-offset-4 transition-colors group-hover:text-[#ffb45c]">Pitch a creative collaboration <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span></span>
             </a>
           </div>
         </div>
