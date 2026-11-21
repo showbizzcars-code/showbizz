@@ -83,6 +83,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
   const [done, setDone] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [uploadedPhotoUrls, setUploadedPhotoUrls] = useState<string[]>([]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -117,6 +118,7 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
     setPending(true);
     setError(null);
     setUploadStatus(null);
+    setUploadedPhotoUrls([]);
     try {
       for (let index = 0; index < imageFiles.length; index += 1) {
         const position = index + 1;
@@ -150,9 +152,16 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
         return;
       }
 
+      // Use the server-built message so real uploaded image URLs are included when present.
+      const whatsAppMessage = "message" in result && typeof result.message === "string" && result.message.trim()
+        ? result.message
+        : message;
+      const photoUrlMatches = whatsAppMessage.match(/https?:\/\/\S+/g) || [];
+      setUploadedPhotoUrls(photoUrlMatches);
+
       setSavedWhatsAppHref(
         whatsAppHref
-          ? leadWhatsAppHref(whatsAppHref, { ...details, message })
+          ? leadWhatsAppHref(whatsAppHref, { ...details, message: whatsAppMessage })
           : null,
       );
       setDone(true);
@@ -175,12 +184,27 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
           Your enquiry and selected vehicle photos have been saved for the Showbizz Cars team to review.
           Submission does not guarantee vehicle acceptance or rental income.
         </p>
+        {uploadedPhotoUrls.length > 0 ? (
+          <div className="mt-4 space-y-1 text-xs leading-5 text-muted">
+            <p className="font-medium text-ink">Uploaded photo links included with your enquiry:</p>
+            {uploadedPhotoUrls.map((url) => (
+              <p key={url} className="break-all">
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
+                  {url}
+                </a>
+              </p>
+            ))}
+          </div>
+        ) : null}
         {savedWhatsAppHref ? (
           <div className="mt-5">
             <a href={savedWhatsAppHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-accent-fg">
               Continue to WhatsApp <span className="ml-2" aria-hidden="true">↗</span>
             </a>
-            <p className="mt-2 text-xs text-muted">Review the prefilled details, then tap Send in WhatsApp. Your uploaded photos are already saved with the enquiry for our team.</p>
+            <p className="mt-2 text-xs text-muted">
+              WhatsApp opens with your details and any uploaded photo URLs prefilled in the message text.
+              WhatsApp does not automatically attach image files through a normal prefilled message—review the text, then tap Send. Your photos are already saved with the enquiry for our team.
+            </p>
           </div>
         ) : (
           <p className="mt-5 text-sm text-muted">WhatsApp is not configured yet. The team can follow up using the contact details you provided.</p>
@@ -235,7 +259,11 @@ export function HostCarEnquiryForm({ whatsAppHref }: { whatsAppHref: string | nu
           <input name="currentKilometres" type="number" required min={0} step={1} placeholder="e.g. 42000" className={control} />
         </label>
         <label className="text-sm font-medium">State of Registration
-          <input name="registrationState" required maxLength={100} placeholder="e.g. Karnataka" className={control} />
+          <select name="registrationState" required defaultValue="" className={control}>
+            <option value="" disabled>Select registration</option>
+            <option value="Karnataka registration">Karnataka registration</option>
+            <option value="Other state registration">Other state registration</option>
+          </select>
         </label>
         <label className="text-sm font-medium sm:col-span-2">Vehicle Photos <span className="font-normal text-muted">(optional)</span>
           <input

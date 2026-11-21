@@ -19,6 +19,17 @@ export const Route = createFileRoute("/collaborate")({
   component: CollaboratePage,
 });
 
+const clientPromoPoints = [
+  "Zero depreciation 'Buy back offer'",
+  "Monopoly business",
+  "Iconic filmy car from KGF 2 & Jailer 2",
+  "Massive fan following",
+  "One year contract",
+  "Excellent rental opportunities with filming firms, content creators, individual, videography, wedding and many more.",
+  "Shared/Fixed rental share option.",
+  "Cash based procurement only",
+];
+
 function CollaboratePage() {
   const data = Route.useLoaderData();
 
@@ -45,6 +56,28 @@ function CollaboratePage() {
                 Choose the path that best describes your idea. Each form records the partnership type with your enquiry so the team can distinguish vehicle business proposals from creative opportunities.
               </p>
             </div>
+          </div>
+
+          <div className="mt-10 space-y-5">
+            <div className="overflow-hidden rounded-card border border-line bg-black/40">
+              <video
+                className="aspect-video w-full object-cover"
+                src="/vehicle-sales-client-promo.mp4"
+                controls
+                playsInline
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <ul className="grid gap-2.5 text-base font-semibold leading-7 text-ink sm:text-lg">
+              {clientPromoPoints.map((point) => (
+                <li key={point} className="flex gap-3">
+                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
