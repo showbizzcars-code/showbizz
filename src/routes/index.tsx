@@ -71,12 +71,12 @@ function Home() {
                 loading="lazy"
               />
               <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,12,.92)_0%,rgba(5,8,12,.62)_54%,rgba(5,8,12,.18)_100%)]" />
-              <img
-                src="/vehicle-sales-shimmer.gif"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full object-fill"
-              />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid h-full w-full grid-cols-2 grid-rows-2">
+                <img src="/vehicle-sales-promo-00.webp" alt="" className="block h-full w-full object-fill" />
+                <img src="/vehicle-sales-promo-10.webp" alt="" className="block h-full w-full object-fill" />
+                <img src="/vehicle-sales-promo-01.webp" alt="" className="block h-full w-full object-fill" />
+                <img src="/vehicle-sales-promo-11.webp" alt="" className="block h-full w-full object-fill" />
+              </div>
               <div className="relative z-10 flex min-h-[360px] flex-col items-start justify-end p-6 sm:p-8">
                 <p className="eyebrow text-[#e2c58e]">Showbizz Cars / Vehicle promotion</p>
                 <h3 className="mt-3 max-w-sm font-display text-4xl leading-tight text-white sm:text-5xl">
