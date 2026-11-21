@@ -117,24 +117,6 @@ function CollaboratePage() {
             <p className="mt-5 leading-7 text-muted">
               Share your indicative vehicle budget and preferred commercial structure. The team can review the enquiry and discuss next steps.
             </p>
-            <figure className="relative mt-8 aspect-[4/3] max-w-md overflow-hidden rounded-card border border-[#a88443]/60 bg-[#090d12] shadow-[0_14px_45px_rgba(0,0,0,.28)]">
-              <img
-                src="/showbizz-luxury-hero.webp"
-                alt="Sample animated vehicle promotion visual"
-                className="absolute inset-0 h-full w-full object-cover opacity-70"
-                loading="lazy"
-              />
-              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#05080c]/80 via-transparent to-[#05080c]/20" />
-              <img
-                src="/vehicle-sales-shimmer.gif"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full object-fill"
-              />
-              <figcaption className="absolute bottom-4 left-5 text-xs font-semibold uppercase tracking-[.18em] text-white/80">
-                Sample vehicle promotion visual
-              </figcaption>
-            </figure>
           </div>
           <PartnershipEnquiryForm kind="car-business" settings={data.settings} />
         </div>
