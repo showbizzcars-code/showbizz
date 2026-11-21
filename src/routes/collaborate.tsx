@@ -68,6 +68,45 @@ function CollaboratePage() {
         </div>
       </section>
 
+      <section aria-labelledby="vehicle-promotion-title" className="border-b border-line bg-[#090b0d]">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 md:py-16">
+          <div className="overflow-hidden rounded-card border border-white/15 bg-black shadow-[0_24px_80px_rgba(0,0,0,.35)]">
+            <video
+              className="block aspect-video w-full object-cover"
+              src="/vehicle-sales-client-promo.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              preload="metadata"
+              aria-label="Showbizz Cars vehicle promotion"
+            >
+              Your browser does not support the promotional video.
+            </video>
+          </div>
+          <div className="mt-8 rounded-card border border-[#d9ad53]/45 bg-[linear-gradient(135deg,rgba(217,173,83,.16),rgba(255,255,255,.035))] p-6 sm:p-8 md:p-10">
+            <p className="eyebrow !text-[#f0c66f]">Vehicle partnership highlights</p>
+            <h2 id="vehicle-promotion-title" className="mt-3 max-w-4xl font-display text-3xl leading-tight text-[#ffe09a] sm:text-4xl md:text-5xl">
+              A distinctive car. Multiple rental opportunities.
+            </h2>
+            <ul className="mt-7 grid gap-x-10 gap-y-4 text-base font-semibold leading-7 text-[#ffe6ad] sm:grid-cols-2">
+              <li>• Zero depreciation ‘Buy back offer’</li>
+              <li>• Monopoly business</li>
+              <li>• Iconic filmy car from KGF 2 &amp; Jailer 2</li>
+              <li>• Massive fan following</li>
+              <li>• One year contract</li>
+              <li>• Excellent rental opportunities with filming firms, content creators, individuals, videography, weddings and more</li>
+              <li>• Shared / fixed rental share option</li>
+              <li>• Cash-based procurement only</li>
+            </ul>
+            <p className="mt-6 border-t border-[#d9ad53]/25 pt-4 text-xs leading-6 text-[#e7d3a5]">
+              All offers, vehicle eligibility, contract terms and rental arrangements are subject to written confirmation by Showbizz Cars.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:py-24">
         <div className="grid gap-8 md:grid-cols-[.8fr_1.2fr] md:items-start">
           <div>
